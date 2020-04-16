@@ -9,8 +9,6 @@ SCREEN_TITLE = "Arena"
 class Arena(arcade.Window):
 
     def __init__(self, width, height, title):
-        """Initialize the game
-        """
         super().__init__(width, height, title)
 
         # Set up the empty sprite lists
@@ -24,9 +22,6 @@ class Arena(arcade.Window):
         self.GOD_MODE = True
 
     def setup(self):
-        """Get the game ready to play
-        """
-
         # Set the background color
         arcade.set_background_color(arcade.color.GRAY)
 
@@ -40,13 +35,6 @@ class Arena(arcade.Window):
         arcade.schedule(self.add_enemy, 0.5)
 
     def on_update(self, delta_time: float):
-        """Update the positions and statuses of all game objects
-        If paused, do nothing
-
-        Arguments:
-            delta_time {float} -- Time since the last update
-        """
-
         # If paused, don't update anything
         if self.paused:
             return
@@ -62,16 +50,14 @@ class Arena(arcade.Window):
         # Keep the player on screen
         if self.player.top > self.height:
             self.player.top = self.height
-        if self.player.right > self.width:
+        elif self.player.right > self.width:
             self.player.right = self.width
-        if self.player.bottom < 0:
+        elif self.player.bottom < 0:
             self.player.bottom = 0
-        if self.player.left < 0:
+        elif self.player.left < 0:
             self.player.left = 0
 
     def on_draw(self):
-        """Draw all game objects
-        """
         # Begin rendering (will end automatically after method ends)
         arcade.start_render()
 
@@ -86,11 +72,6 @@ class Arena(arcade.Window):
         self.all_sprites.draw()
 
     def add_enemy(self, delta_time: float):
-        """Adds a new enemy to the screen
-
-        Arguments:
-            delta_time {float} -- How much time has passed since the last call
-        """
         if self.paused:
             return
 
@@ -126,29 +107,11 @@ class Arena(arcade.Window):
         self.all_sprites.append(bullet)
 
     def on_key_press(self, key, modifiers):
-        """Handle user keyboard input
-        Q: Quit the game
-        P: Pause/Unpause the game
-        I/J/K/L: Move Up, Left, Down, Right
-        Arrows: Move Up, Left, Down, Right
-
-        Arguments:
-            symbol {int} -- Which key was pressed
-            modifiers {int} -- Which modifiers were pressed
-        """
         if key == arcade.key.Q:
-            # Quit immediately
             arcade.close_window()
 
         if key == arcade.key.P:
             self.paused = not self.paused
-
-
-        #if symbol == arcade.key.W or symbol == arcade.key.UP:
-        #    self.player.change_y = 15
-
-        #if symbol == arcade.key.S or symbol == arcade.key.DOWN:
-        #    self.player.change_y = -15
 
         if key == arcade.key.A or key == arcade.key.LEFT:
             self.player.change_x = -self.player_velocity
@@ -160,12 +123,6 @@ class Arena(arcade.Window):
             self.player.change_y = self.player_velocity
 
     def on_key_release(self, key: int, modifiers: int):
-        """Undo movement vectors when movement keys are released
-
-        Arguments:
-            symbol {int} -- Which key was pressed
-            modifiers {int} -- Which modifiers were pressed
-        """
         if (
             key == arcade.key.W
             or key == arcade.key.S
