@@ -1,10 +1,21 @@
 import arcade
 import random
 import time
+import Database
+from tkinter import *
+from functools import partial
+import sqlite3
+from sqlite3 import Error
+import os
+import pyautogui
+from datetime import datetime
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
 SCREEN_TITLE = "Arena"
+
+def createAlert(text, title, button):
+    pyautogui.alert(text=text, title=title, button=button)
 
 class Arena(arcade.Window):
 
@@ -109,6 +120,9 @@ class Arena(arcade.Window):
     def on_key_press(self, key, modifiers):
         if key == arcade.key.Q:
             arcade.close_window()
+            db.conn.close()
+            root.destroy()
+            exit()
 
         if key == arcade.key.P:
             self.paused = not self.paused
@@ -153,7 +167,196 @@ class Bullet(arcade.Sprite):
         if self.collides_with_list(app.enemies_list):
             self.remove_from_sprite_lists()
 
+
+class LoginWindow(Frame):
+    def __init__(self, master=None): 
+        Frame.__init__(self, master)
+
+        self.master.protocol("WM_DELETE_WINDOW", self.client_exit)
+                
+        self.master = master
+        self.master.geometry("600x400")
+
+        self.init_window()
+
+    def init_window(self):
+        self.master.title("Arena - Login")
+
+        # Initialize window with necessary buttons and labels
+        username_label = Label(self, text='Username: ')
+        username_label.grid(row=1, column=1, sticky="N", padx=40, pady=20)
+        username_entry = Entry(self, width=40)
+        username_entry.grid(row=1, column=2, sticky="N", padx=40, pady=20, columnspan=2)
+
+        pass_label = Label(self, text='Password: ')
+        pass_label.grid(row=2, column=1, sticky="N", padx=40, pady=20)
+        pass_entry = Entry(self, show="*", width=40)
+        pass_entry.grid(row=2, column=2, sticky="N", padx=40, pady=20, columnspan=2)
+
+        login_button = Button(self, text='Login', width=20, command=partial(self.processLogin, username_entry, pass_entry))
+        login_button.focus_set()
+        login_button.grid(row=3, column=2, columnspan=1, padx=10, pady=25)
+
+        create_button = Button(self, text='Create Account', width=20, command=lambda: self.newWindow(CreateAccount))
+        create_button.grid(row=4, column=2,pady=25)
+
+        forgot_button = Button(self, text='Forgot Password', width=20)
+        forgot_button.grid(row=5, column=2,pady=25)
+
+    def processLogin(self, user, pw):
+        username = user.get()
+        password = pw.get()
+
+        # Check if they have anything entered
+        if not username or not password:
+            createAlert("You must enter a username and password.", "Error", "OK")
+            return
+        
+        # Check for valid username & password.  If EITHER are incorrect, say that EITHER are incorrect, not "user incorrect" or "pass incorrect"
+        login_info = db.getLoginInfo()
+
+        if username not in login_info.keys() or password not in login_info[username]:
+            print("Username or password invalid.")
+            createAlert("Username or password invalid.", "Error", "OK")
+        elif username in login_info.keys() and password in login_info[username]:
+            # If both valid
+            createAlert("Login successful!", "Success!", "OK")
+            db.CURRENT_USERNAME = username
+            CURRENT_USERNAME = username
+            user.delete(0, END)
+            pw.delete(0, END)
+            
+            # Start game
+            self.launchGame()
+            root.withdraw()
+
+            ### DESTROY LOGIN WINDOW SOMEHOW ###
+
+    def newWindow(self, window):
+        self.new = Toplevel(self.master)
+        window(self.new)
+        if window != CreateAccount:
+            root.withdraw() # hide the login window on successful login
+
+    def launchGame(self):
+        game = Arena(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+        game.setup()
+        arcade.run()
+
+    def client_exit(self):
+        db.conn.close()
+        root.destroy()
+        exit()
+
+class CreateAccount(Frame):
+    def __init__(self, master): 
+        Frame.__init__(self, master)
+                
+        self.master = master
+        self.master.geometry("750x400")
+
+        self.acct_ids = db.getAcctIds()
+
+        self.acct_id = 0
+
+        # Get a free ID slot by checking against IDs in database
+        while True:
+            if self.acct_id in self.acct_ids:
+                print("Starting ID already found in DB -- incrementing ID")
+                self.acct_id += 1
+            else:
+                break
+
+        self.init_window()
+
+    def init_window(self):
+        self.master.title("Arena - Account Creation")
+        self.pack(fill=BOTH, expand=1)
+
+        # Initialize window with necessary buttons and labels
+        username_label = Label(self, text='Username: ')
+        username_label.grid(row=1, column=1, sticky="N", padx=40, pady=20)
+        username_entry = Entry(self, width=40)
+        username_entry.grid(row=1, column=2, sticky="N", padx=40, pady=20, columnspan=2)
+
+        pass_label = Label(self, text='Password: ')
+        pass_label.grid(row=2, column=1, sticky="N", padx=40, pady=20)
+        pass_entry = Entry(self, show="*", width=40)
+        pass_entry.grid(row=2, column=2, sticky="N", padx=40, pady=20, columnspan=2)
+
+        email_label = Label(self, text='Email: ')
+        email_label.grid(row=3, column=1, sticky="N", padx=40, pady=20)
+        email_entry = Entry(self, width=40)
+        email_entry.grid(row=3, column=2, sticky="N", padx=40, pady=20, columnspan=2)
+
+        create_button = Button(self, text='Create', width=20, command=partial(self.processCreation, username_entry, pass_entry, email_entry))
+        create_button.grid(row=4, column=2, padx=10, pady=25, sticky="W")
+
+    def processCreation(self, user, pw, email):
+        for item in [user.get(), pw.get(), email.get()]:
+            if not item:
+                print("Username, password, and email are required!")
+                createAlert("Username, password, and email are required!", "Error", "OK")
+                return
+            
+        login_info = db.getLoginInfo()
+        if user.get() in login_info.keys():
+            print("Username already taken.")
+            createAlert("Username already taken.", "Error", "OK")
+            return
+        elif any(email.get() in val for val in login_info.values()):
+            print("Email already in use.")
+            createAlert("Email already in use.", "Error", "OK")
+            return
+        else:
+            self.username = user.get()
+            self.password = pw.get()
+            self.email = email.get()
+            self.date = datetime.now().strftime("%m/%d/%Y")
+
+            values = (self.acct_id, self.username, self.password, self.email, self.date)
+            print(values)
+            query = """INSERT INTO accounts VALUES (?, ?, ?, ?, ?);"""
+
+            insertions = {values: query}
+
+            insert = db.insertAccount(insertions)
+            if insert is True:
+                print("Account creation successful!")
+                createAlert("Account creation successful!", "Success", "OK")
+                self.master.destroy()
+            else:
+                print("Error with account creation.")
+
+
+class ForgotPassword(Frame):
+    def __init__(self, master): 
+        Frame.__init__(self, master)
+                
+        self.master = master
+        self.master.geometry("750x400")
+        self.init_window()
+
+    def init_window(self):
+        self.master.title("Arena - Forgot Password")
+        self.pack(fill=BOTH, expand=1)
+
 if __name__ == "__main__":
-    app = Arena(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
-    app.setup()
-    arcade.run()
+    root = Tk()
+
+    #root.geometry("1080x600")
+    root.resizable(False, False)
+    root.grid_rowconfigure(0, weight=1)
+    root.grid_columnconfigure(0, weight=1)
+
+    app = LoginWindow(root).grid(sticky="NSEW")
+
+    # Who is logged in
+    CURRENT_USERNAME = ""
+
+    # Initialize database at startup
+    db = Database.Database()
+
+    game = None
+
+    root.mainloop()
