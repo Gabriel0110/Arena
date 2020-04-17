@@ -23,6 +23,30 @@ max_characters = 4
 def createAlert(text, title, button):
     pyautogui.alert(text=text, title=title, button=button)
 
+
+###################################
+#            BUTTONS              #
+###################################
+
+class ContinueButton(TextButton):
+    def __init__(self, game, x=0, y=0, width=100, height=40, text="Continue", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+        self.game = game
+
+    def on_press(self):
+        #global game
+        game_view = self.game
+        game.show_view(game_view)
+
+class MainMenuButton(TextButton):
+    def __init__(self, game, x=0, y=0, width=100, height=40, text="Main Menu", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+
+    def on_press(self):
+        global game
+        main_menu = MainMenu()
+        game.show_view(main_menu)
+
 class CreateButton(TextButton):
     def __init__(self, game, x=0, y=0, width=100, height=40, text="Create", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
@@ -56,8 +80,9 @@ class PlayButton(TextButton):
 
     def on_press(self):
         global game
-        #self.pressed = True
-        game.show_view(CharacterSelect())
+        game_view = Arena()
+        game_view.setup()
+        game.show_view(game_view)
 
 class ExitButton(TextButton):
     def __init__(self, game, x=0, y=0, width=100, height=40, text="Exit", theme=None):
@@ -67,6 +92,9 @@ class ExitButton(TextButton):
         #self.pressed = True
         db.conn.close()
         exit()
+
+#---------------------------------------------------------------------------------------------------------------#
+
 
 class MainMenu(arcade.View):
     def __init__(self):
@@ -138,17 +166,56 @@ class PauseMenu(arcade.View):
         super().__init__()
         self.game_view = game_view
 
+        self.theme = Theme()
+        self.theme.set_font(24, arcade.color.BLACK)
+        normal = "images/Normal.png"
+        hover = "images/Hover.png"
+        clicked = "images/Clicked.png"
+        locked = "images/Locked.png"
+        self.theme.add_button_textures(normal, hover, clicked, locked)
+
+        self.button_list.append(ContinueButton(self.game_view, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 110, 50, theme=self.theme))
+        self.button_list.append(MainMenuButton(self.game_view, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 110, 50, theme=self.theme))
+
     def on_show(self):
-        arcade.set_background_color(arcade.color.GRAY)
+        arcade.set_background_color(arcade.color.ORANGE)
 
     def on_draw(self):
         arcade.start_render()
-        arcade.draw_text("PAUSED", SCREEN_WIDTH/2, SCREEN_HEIGHT/2,
-                         arcade.color.BLACK, font_size=30, anchor_x="center")
 
-    def on_mouse_press(self, _x, _y, _button, _modifiers):
-        character_select = CharacterSelect()
-        self.window.show_view(character_select)
+        # draw an orange filter over him
+        arcade.draw_lrtb_rectangle_filled(left=SCREEN_WIDTH*0,
+                                          right=SCREEN_WIDTH,
+                                          top=SCREEN_HEIGHT,
+                                          bottom=SCREEN_HEIGHT*0,
+                                          color=arcade.color.ORANGE + (200,))
+
+        arcade.draw_text("PAUSED", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.6, arcade.color.BLACK, font_size=30, anchor_x="center")
+
+        # Show tip to return or reset
+        arcade.draw_text("Press 'Continue' to return to the game.",
+                         SCREEN_WIDTH/2,
+                         SCREEN_HEIGHT/2,
+                         arcade.color.BLACK,
+                         font_size=20,
+                         anchor_x="center")
+        arcade.draw_text("Press 'Main Menu' to exit to the main menu.",
+                         SCREEN_WIDTH/2,
+                         SCREEN_HEIGHT/2-30,
+                         arcade.color.BLACK,
+                         font_size=20,
+                         anchor_x="center")
+
+        for button in self.button_list:
+            button.draw()
+
+    # DON'T WANT THIS -- WE'RE USING BUTTONS TO RESUME/QUIT
+    # def on_key_press(self, key, _modifiers):
+    #     if key == arcade.key.ESCAPE:   # resume game
+    #         self.window.show_view(self.game_view)
+    #     elif key == arcade.key.ENTER:  # reset game
+    #         game = GameView()
+    #         self.window.show_view(game)
 
 class Arena(arcade.View):
     def __init__(self):
@@ -176,6 +243,10 @@ class Arena(arcade.View):
 
         # Spawn a new enemy every 0.5 seconds
         #arcade.schedule(self.add_enemy, 0.5)
+
+    def on_show(self):
+        # Set the background color
+        arcade.set_background_color(arcade.color.GRAY)
 
     def on_update(self, delta_time: float):
         # If paused, don't update anything
@@ -205,12 +276,12 @@ class Arena(arcade.View):
         arcade.start_render()
 
         # Draw scoreboard text
-        self.score_text = arcade.draw_text("SCORE: {}".format(str(self.score)), SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
-        self.level_text = arcade.draw_text("Level: {}".format(str(self.level)), SCREEN_WIDTH - 175, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
+        # self.score_text = arcade.draw_text("SCORE: {}".format(str(self.score)), SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
+        # self.level_text = arcade.draw_text("Level: {}".format(str(self.level)), SCREEN_WIDTH - 175, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
         
         # Sanity check to let you know that god mode is active when using it
-        if self.GOD_MODE:
-            self.godmode_active_text = arcade.draw_text("GOD MODE ACTIVE", SCREEN_WIDTH*0.02, SCREEN_HEIGHT - 35, arcade.color.BLACK, 20)
+        #if self.GOD_MODE:
+            #self.godmode_active_text = arcade.draw_text("GOD MODE ACTIVE", SCREEN_WIDTH*0.02, SCREEN_HEIGHT - 35, arcade.color.BLACK, 20)
 
         self.all_sprites.draw()
 
@@ -250,15 +321,12 @@ class Arena(arcade.View):
         self.all_sprites.append(bullet)
 
     def on_key_press(self, key, modifiers):
-        if key == arcade.key.Q:
-            arcade.close_window()
-            db.conn.close()
-            root.destroy()
-            exit()
+        global game
 
         # Have to create a pause menu
-        #if key == arcade.key.P:
-        #    arcade.paused = not arcade.paused
+        if key == arcade.key.ESCAPE:
+           pause_menu = PauseMenu(self)
+           game.show_view(pause_menu)
 
         if key == arcade.key.A or key == arcade.key.LEFT:
             self.player.change_x = -self.player_velocity
@@ -267,7 +335,7 @@ class Arena(arcade.View):
         elif key == arcade.key.W or key == arcade.key.UP:
             self.player.change_y = self.player_velocity
         elif key == arcade.key.S or key == arcade.key.DOWN:
-            self.player.change_y = self.player_velocity
+            self.player.change_y = -self.player_velocity
 
     def on_key_release(self, key: int, modifiers: int):
         if (
