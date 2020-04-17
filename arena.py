@@ -13,7 +13,7 @@ from datetime import datetime
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
-SCREEN_TITLE = "Arena"
+SCREEN_TITLE = "Onslaught"
 game = None
 characterSelected = False
 attemptedPlay = False
@@ -29,7 +29,7 @@ def createAlert(text, title, button):
 ###################################
 
 class ContinueButton(TextButton):
-    def __init__(self, game, x=0, y=0, width=100, height=40, text="Continue", theme=None):
+    def __init__(self, game, x=0, y=0, width=120, height=40, text="Continue", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
         self.game = game
 
@@ -39,7 +39,7 @@ class ContinueButton(TextButton):
         game.show_view(game_view)
 
 class MainMenuButton(TextButton):
-    def __init__(self, game, x=0, y=0, width=100, height=40, text="Main Menu", theme=None):
+    def __init__(self, game, x=0, y=0, width=120, height=40, text="Main Menu", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
 
     def on_press(self):
@@ -67,9 +67,9 @@ class StartButton(TextButton):
         print("CLICKED START")
         attemptedPlay = True
         if characterSelected:
-            arena = Arena()
-            arena.setup()
-            game.show_view(arena)
+            onslaught_view = Onslaught()
+            onslaught_view.setup()
+            game.show_view(onslaught_view)
             attemptedPlay = False
         else:
             print("Please select a character to play. If you don't have any characters, create a new one!")
@@ -114,7 +114,7 @@ class MainMenu(arcade.View):
 
     def on_draw(self):
         arcade.start_render()
-        arcade.draw_text("MAIN MENU", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.6, arcade.color.BLACK, font_size=30, anchor_x="center")
+        arcade.draw_text("Onslaught", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.7, arcade.color.BLACK, font_size=50, font_name='GOTHIC', anchor_x="center")
         for button in self.button_list:
             button.draw()
 
@@ -215,7 +215,7 @@ class PauseMenu(arcade.View):
     #         game = GameView()
     #         self.window.show_view(game)
 
-class Arena(arcade.View):
+class Onslaught(arcade.View):
     def __init__(self):
         super().__init__()
 
@@ -381,7 +381,7 @@ class LoginWindow(Frame):
         self.init_window()
 
     def init_window(self):
-        self.master.title("Arena - Login")
+        self.master.title("Onslaught - Login")
 
         # Initialize window with necessary buttons and labels
         username_label = Label(self, text='Username: ')
@@ -473,7 +473,7 @@ class CreateAccount(Frame):
         self.init_window()
 
     def init_window(self):
-        self.master.title("Arena - Account Creation")
+        self.master.title("Onslaught - Account Creation")
         self.pack(fill=BOTH, expand=1)
 
         # Initialize window with necessary buttons and labels
@@ -541,7 +541,7 @@ class ForgotPassword(Frame):
         self.init_window()
 
     def init_window(self):
-        self.master.title("Arena - Forgot Password")
+        self.master.title("Onslaught - Forgot Password")
         self.pack(fill=BOTH, expand=1)
 
 if __name__ == "__main__":
