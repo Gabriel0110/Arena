@@ -15,6 +15,10 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
 SCREEN_TITLE = "Arena"
 game = None
+characterSelected = False
+attemptedPlay = False
+total_characters = 0
+max_characters = 4
 
 def createAlert(text, title, button):
     pyautogui.alert(text=text, title=title, button=button)
@@ -24,10 +28,10 @@ class CreateButton(TextButton):
         super().__init__(x, y, width, height, text, theme=theme)
 
     def on_press(self):
-        global game
-        if CharacterSelect.total_characters < CharacterSelect.max_characters:
+        global game, total_characters, max_characters
+        if total_characters < max_characters:
             game.show_view(CharacterCreation())
-        elif CharacterSelect.total_characters == CharacterSelect.max_characters:
+        elif total_characters == max_characters:
             print("You have too many characters! Please delete one to create a free slot.")
 
 class StartButton(TextButton):
@@ -35,13 +39,14 @@ class StartButton(TextButton):
         super().__init__(x, y, width, height, text, theme=theme)
 
     def on_press(self):
-        global game
-        CharacterSelect.attemptedPlay = True
-        if CharacterSelect.characterSelected:
+        global game, characterSelected, attemptedPlay
+        print("CLICKED START")
+        attemptedPlay = True
+        if characterSelected:
             arena = Arena()
             arena.setup()
             game.show_view(arena)
-            CharacterSelect.attemptedPlay = False
+            attemptedPlay = False
         else:
             print("Please select a character to play. If you don't have any characters, create a new one!")
 
@@ -87,9 +92,6 @@ class MainMenu(arcade.View):
         for button in self.button_list:
             button.draw()
 
-    def on_mouse_release(self, _x, _y, _button, _modifiers):
-        pass
-
 class CharacterSelect(arcade.View):
     def __init__(self):
         super().__init__()
@@ -102,9 +104,6 @@ class CharacterSelect(arcade.View):
         locked = "images/Locked.png"
         self.theme.add_button_textures(normal, hover, clicked, locked)
 
-        self.characterSelected = False
-        self.attemptedPlay = False
-
         self.button_list.append(StartButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 110, 50, theme=self.theme))
         self.button_list.append(CreateButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 110, 50, theme=self.theme))
     
@@ -112,14 +111,18 @@ class CharacterSelect(arcade.View):
         arcade.set_background_color(arcade.color.GRAY)
 
     def on_draw(self):
+        global characterSelected, attemptedPlay
         arcade.start_render()
         arcade.draw_text("Character Select", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.8, arcade.color.BLACK, font_size=30, anchor_x="center")
         arcade.draw_text("Choose one of your current characters to\ncontinue playing, or create a new one!", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.7, arcade.color.BLACK, font_size=20, anchor_x="center")
         for button in self.button_list:
             button.draw()
 
-        if self.attemptedPlay and not self.characterSelected:
-            arcade.draw_text("You must select a character to play.", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.08, arcade.color.BLACK, font_size=30, anchor_x="center")
+        if attemptedPlay and not characterSelected:
+            arcade.draw_text("You must select a character to play.", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.03, arcade.color.BLACK, font_size=30, anchor_x="center")
+
+    def on_update(self, delta_time: float):
+        pass
 
 class CharacterCreation(arcade.View):
     def on_show(self):
