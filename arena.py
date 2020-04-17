@@ -80,9 +80,7 @@ class PlayButton(TextButton):
 
     def on_press(self):
         global game
-        game_view = Arena()
-        game_view.setup()
-        game.show_view(game_view)
+        game.show_view(CharacterSelect())
 
 class ExitButton(TextButton):
     def __init__(self, game, x=0, y=0, width=100, height=40, text="Exit", theme=None):
