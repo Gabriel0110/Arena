@@ -1,4 +1,5 @@
 import arcade
+from arcade.gui import *
 import random
 import time
 import Database
@@ -13,41 +14,142 @@ from datetime import datetime
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
 SCREEN_TITLE = "Arena"
+game = None
 
 def createAlert(text, title, button):
     pyautogui.alert(text=text, title=title, button=button)
 
+class CreateButton(TextButton):
+    def __init__(self, game, x=0, y=0, width=100, height=40, text="Create", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+
+    def on_press(self):
+        global game
+        if CharacterSelect.total_characters < CharacterSelect.max_characters:
+            game.show_view(CharacterCreation())
+        elif CharacterSelect.total_characters == CharacterSelect.max_characters:
+            print("You have too many characters! Please delete one to create a free slot.")
+
+class StartButton(TextButton):
+    def __init__(self, game, x=0, y=0, width=100, height=40, text="Start", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+
+    def on_press(self):
+        global game
+        CharacterSelect.attemptedPlay = True
+        if CharacterSelect.characterSelected:
+            arena = Arena()
+            arena.setup()
+            game.show_view(arena)
+            CharacterSelect.attemptedPlay = False
+        else:
+            print("Please select a character to play. If you don't have any characters, create a new one!")
+
 class PlayButton(TextButton):
     def __init__(self, game, x=0, y=0, width=100, height=40, text="Play", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
-        self.game = game
 
     def on_press(self):
-        self.pressed = True
+        global game
+        #self.pressed = True
+        game.show_view(CharacterSelect())
 
-    def on_release(self):
-        if self.pressed:
-            self.game.pause = False
-            self.pressed = False
+class ExitButton(TextButton):
+    def __init__(self, game, x=0, y=0, width=100, height=40, text="Exit", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
 
-class CharacterSelectView(arcade.View):
+    def on_press(self):
+        #self.pressed = True
+        db.conn.close()
+        exit()
+
+class MainMenu(arcade.View):
+    def __init__(self):
+        super().__init__()
+
+        self.theme = Theme()
+        self.theme.set_font(24, arcade.color.BLACK)
+        normal = "images/Normal.png"
+        hover = "images/Hover.png"
+        clicked = "images/Clicked.png"
+        locked = "images/Locked.png"
+        self.theme.add_button_textures(normal, hover, clicked, locked)
+
+        self.button_list.append(PlayButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.4, 110, 50, theme=self.theme))
+        self.button_list.append(ExitButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.4, 110, 50, theme=self.theme))
+
     def on_show(self):
         arcade.set_background_color(arcade.color.GRAY)
 
     def on_draw(self):
         arcade.start_render()
-        arcade.draw_text("Menu Screen - click to advance", WIDTH/2, HEIGHT/2,
+        arcade.draw_text("MAIN MENU", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.6, arcade.color.BLACK, font_size=30, anchor_x="center")
+        for button in self.button_list:
+            button.draw()
+
+    def on_mouse_release(self, _x, _y, _button, _modifiers):
+        pass
+
+class CharacterSelect(arcade.View):
+    def __init__(self):
+        super().__init__()
+
+        self.theme = Theme()
+        self.theme.set_font(24, arcade.color.BLACK)
+        normal = "images/Normal.png"
+        hover = "images/Hover.png"
+        clicked = "images/Clicked.png"
+        locked = "images/Locked.png"
+        self.theme.add_button_textures(normal, hover, clicked, locked)
+
+        self.characterSelected = False
+        self.attemptedPlay = False
+
+        self.button_list.append(StartButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 110, 50, theme=self.theme))
+        self.button_list.append(CreateButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 110, 50, theme=self.theme))
+    
+    def on_show(self):
+        arcade.set_background_color(arcade.color.GRAY)
+
+    def on_draw(self):
+        arcade.start_render()
+        arcade.draw_text("Character Select", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.8, arcade.color.BLACK, font_size=30, anchor_x="center")
+        arcade.draw_text("Choose one of your current characters to\ncontinue playing, or create a new one!", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.7, arcade.color.BLACK, font_size=20, anchor_x="center")
+        for button in self.button_list:
+            button.draw()
+
+        if self.attemptedPlay and not self.characterSelected:
+            arcade.draw_text("You must select a character to play.", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.08, arcade.color.BLACK, font_size=30, anchor_x="center")
+
+class CharacterCreation(arcade.View):
+    def on_show(self):
+        arcade.set_background_color(arcade.color.GRAY)
+
+    def on_draw(self):
+        arcade.start_render()
+        arcade.draw_text("Character Creation", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.8, arcade.color.BLACK, font_size=30, anchor_x="center")
+
+class PauseMenu(arcade.View):
+    # For pause and unpause to work, the call to PauseMenu must have self sent with it, so pause = PauseMenu(self), then self.window.show_view(pause)
+    def __init__(self, game_view):
+        super().__init__()
+        self.game_view = game_view
+
+    def on_show(self):
+        arcade.set_background_color(arcade.color.GRAY)
+
+    def on_draw(self):
+        arcade.start_render()
+        arcade.draw_text("PAUSED", SCREEN_WIDTH/2, SCREEN_HEIGHT/2,
                          arcade.color.BLACK, font_size=30, anchor_x="center")
 
     def on_mouse_press(self, _x, _y, _button, _modifiers):
-        game_view = GameView()
-        game_view.setup()
-        self.window.show_view(game_view)
+        character_select = CharacterSelect()
+        self.window.show_view(character_select)
 
-class GameView(arcade.View):
-
-    def __init__(self, width, height, title):
-        super().__init__(width, height, title)
+class Arena(arcade.View):
+    def __init__(self):
+        super().__init__()
 
         # Set up the empty sprite lists
         self.enemies_list = arcade.SpriteList()
@@ -65,17 +167,17 @@ class GameView(arcade.View):
 
         # Set up the player
         self.player = arcade.Sprite("images/player_sprite.png", 0.25)
-        self.player.center_y = self.height/2
-        self.player.left = self.width/2
+        self.player.center_y = SCREEN_HEIGHT/2
+        self.player.left = SCREEN_WIDTH/2
         self.all_sprites.append(self.player)
 
         # Spawn a new enemy every 0.5 seconds
-        arcade.schedule(self.add_enemy, 0.5)
+        #arcade.schedule(self.add_enemy, 0.5)
 
     def on_update(self, delta_time: float):
         # If paused, don't update anything
-        if self.paused:
-            return
+        #if arcade.paused:
+        #    return
 
         # Did you hit an enemy?
         if self.player.collides_with_list(self.enemies_list):
@@ -86,10 +188,10 @@ class GameView(arcade.View):
         self.all_sprites.update()
 
         # Keep the player on screen
-        if self.player.top > self.height:
-            self.player.top = self.height
-        elif self.player.right > self.width:
-            self.player.right = self.width
+        if self.player.top > SCREEN_HEIGHT:
+            self.player.top = SCREEN_HEIGHT
+        elif self.player.right > SCREEN_WIDTH:
+            self.player.right = SCREEN_WIDTH
         elif self.player.bottom < 0:
             self.player.bottom = 0
         elif self.player.left < 0:
@@ -100,25 +202,25 @@ class GameView(arcade.View):
         arcade.start_render()
 
         # Draw scoreboard text
-        self.score_text = arcade.draw_text("SCORE: {}".format(str(self.score)), self.width/2 - 75, self.height - 35, arcade.color.BLACK, 18)
-        self.level_text = arcade.draw_text("Level: {}".format(str(self.level)), self.width - 175, self.height - 35, arcade.color.BLACK, 18)
+        self.score_text = arcade.draw_text("SCORE: {}".format(str(self.score)), SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
+        self.level_text = arcade.draw_text("Level: {}".format(str(self.level)), SCREEN_WIDTH - 175, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
         
         # Sanity check to let you know that god mode is active when using it
         if self.GOD_MODE:
-            self.godmode_active_text = arcade.draw_text("GOD MODE ACTIVE", self.width*0.02, self.height - 35, arcade.color.BLACK, 20)
+            self.godmode_active_text = arcade.draw_text("GOD MODE ACTIVE", SCREEN_WIDTH*0.02, SCREEN_HEIGHT - 35, arcade.color.BLACK, 20)
 
         self.all_sprites.draw()
 
     def add_enemy(self, delta_time: float):
-        if self.paused:
-            return
+        #if arcade.paused:
+        #    return
 
         # First, create the new enemy sprite
         enemy = EnemySprite("images/enemy_sprite.png", 0.15)
 
         # Set its position to a random x position and off-screen at the top
-        enemy.top = random.randint(self.height, self.height + 80)
-        enemy.left = random.randint(10, self.width - 10)
+        enemy.top = random.randint(SCREEN_HEIGHT, SCREEN_HEIGHT + 80)
+        enemy.left = random.randint(10, SCREEN_WIDTH - 10)
 
         # FIX ---- Set it to GO TOWARDS PLAYER
         enemy.velocity = self.enemy_velocity
@@ -128,8 +230,8 @@ class GameView(arcade.View):
         self.all_sprites.append(enemy)
 
     def add_bullet(self):
-        if self.paused:
-            return
+        #if arcade.paused:
+        #    return
 
         bullet = Bullet("images/enemy_sprite.png", 0.05)
 
@@ -151,8 +253,9 @@ class GameView(arcade.View):
             root.destroy()
             exit()
 
-        if key == arcade.key.P:
-            self.paused = not self.paused
+        # Have to create a pause menu
+        #if key == arcade.key.P:
+        #    arcade.paused = not arcade.paused
 
         if key == arcade.key.A or key == arcade.key.LEFT:
             self.player.change_x = -self.player_velocity
@@ -203,6 +306,8 @@ class LoginWindow(Frame):
                 
         self.master = master
         self.master.geometry("600x400")
+
+        self.game = None
 
         self.init_window()
 
@@ -266,7 +371,10 @@ class LoginWindow(Frame):
             root.withdraw() # hide the login window on successful login
 
     def launchGame(self):
+        global game
         game = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+        main_menu = MainMenu()
+        game.show_view(main_menu)
         arcade.run()
 
     def client_exit(self):
@@ -382,7 +490,5 @@ if __name__ == "__main__":
 
     # Initialize database at startup
     db = Database.Database()
-
-    game = None
 
     root.mainloop()
