@@ -17,7 +17,34 @@ SCREEN_TITLE = "Arena"
 def createAlert(text, title, button):
     pyautogui.alert(text=text, title=title, button=button)
 
-class Arena(arcade.Window):
+class PlayButton(TextButton):
+    def __init__(self, game, x=0, y=0, width=100, height=40, text="Play", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+        self.game = game
+
+    def on_press(self):
+        self.pressed = True
+
+    def on_release(self):
+        if self.pressed:
+            self.game.pause = False
+            self.pressed = False
+
+class CharacterSelectView(arcade.View):
+    def on_show(self):
+        arcade.set_background_color(arcade.color.GRAY)
+
+    def on_draw(self):
+        arcade.start_render()
+        arcade.draw_text("Menu Screen - click to advance", WIDTH/2, HEIGHT/2,
+                         arcade.color.BLACK, font_size=30, anchor_x="center")
+
+    def on_mouse_press(self, _x, _y, _button, _modifiers):
+        game_view = GameView()
+        game_view.setup()
+        self.window.show_view(game_view)
+
+class GameView(arcade.View):
 
     def __init__(self, width, height, title):
         super().__init__(width, height, title)
@@ -239,8 +266,7 @@ class LoginWindow(Frame):
             root.withdraw() # hide the login window on successful login
 
     def launchGame(self):
-        game = Arena(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
-        game.setup()
+        game = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
         arcade.run()
 
     def client_exit(self):
