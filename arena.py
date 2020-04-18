@@ -23,23 +23,64 @@ max_characters = 4
 def createAlert(text, title, button):
     pyautogui.alert(text=text, title=title, button=button)
 
+def getButtonThemes():
+    theme = Theme()
+    theme.set_font(24, arcade.color.BLACK)
+    normal = "images/Normal.png"
+    hover = "images/Hover.png"
+    clicked = "images/Clicked.png"
+    locked = "images/Locked.png"
+    theme.add_button_textures(normal, hover, clicked, locked)
+    return theme
+
 
 ###################################
 #            BUTTONS              #
 ###################################
 
-class ContinueButton(TextButton):
-    def __init__(self, game, x=0, y=0, width=120, height=40, text="Continue", theme=None):
+class BackButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=100, height=40, text="Back", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
-        self.game = game
+        self.view = view
+
+    def on_press(self):
+        #global characterSelected
+        game_view = self.view
+        game.show_view(game_view)
+
+class SinglePlayerButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=300, height=40, text="Single-Player Onslaught", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+        #self.game = game
+
+    def on_press(self):
+        global game
+        onslaught_view = Onslaught()
+        onslaught_view.setup()
+        game.show_view(onslaught_view)
+
+class ArenaButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=175, height=40, text="1v1 PvP Arena", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+        #self.game = game
+
+    def on_press(self):
+        global game
+        pvp_arena_view = PvpArena()
+        game.show_view(pvp_arena_view)
+
+class ContinueButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=120, height=40, text="Continue", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+        self.view = view
 
     def on_press(self):
         #global game
-        game_view = self.game
+        game_view = self.view
         game.show_view(game_view)
 
 class MainMenuButton(TextButton):
-    def __init__(self, game, x=0, y=0, width=120, height=40, text="Main Menu", theme=None):
+    def __init__(self, view, x=0, y=0, width=120, height=40, text="Main Menu", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
 
     def on_press(self):
@@ -48,7 +89,7 @@ class MainMenuButton(TextButton):
         game.show_view(main_menu)
 
 class CreateButton(TextButton):
-    def __init__(self, game, x=0, y=0, width=100, height=40, text="Create", theme=None):
+    def __init__(self, view, x=0, y=0, width=100, height=40, text="Create", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
 
     def on_press(self):
@@ -58,24 +99,24 @@ class CreateButton(TextButton):
         elif total_characters == max_characters:
             print("You have too many characters! Please delete one to create a free slot.")
 
-class StartButton(TextButton):
-    def __init__(self, game, x=0, y=0, width=100, height=40, text="Start", theme=None):
+class ChooseButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=100, height=40, text="Choose", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
+        self.view = view
 
     def on_press(self):
         global game, characterSelected, attemptedPlay
-        print("CLICKED START")
         attemptedPlay = True
         if characterSelected:
-            onslaught_view = Onslaught()
-            onslaught_view.setup()
-            game.show_view(onslaught_view)
+            mode_view = ModeSelect(self.view)
+            game.show_view(mode_view)
             attemptedPlay = False
+            characterSelected = False
         else:
             print("Please select a character to play. If you don't have any characters, create a new one!")
 
 class PlayButton(TextButton):
-    def __init__(self, game, x=0, y=0, width=100, height=40, text="Play", theme=None):
+    def __init__(self, view, x=0, y=0, width=100, height=40, text="Play", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
 
     def on_press(self):
@@ -83,7 +124,7 @@ class PlayButton(TextButton):
         game.show_view(CharacterSelect())
 
 class ExitButton(TextButton):
-    def __init__(self, game, x=0, y=0, width=100, height=40, text="Exit", theme=None):
+    def __init__(self, view, x=0, y=0, width=100, height=40, text="Exit", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
 
     def on_press(self):
@@ -98,14 +139,7 @@ class MainMenu(arcade.View):
     def __init__(self):
         super().__init__()
 
-        self.theme = Theme()
-        self.theme.set_font(24, arcade.color.BLACK)
-        normal = "images/Normal.png"
-        hover = "images/Hover.png"
-        clicked = "images/Clicked.png"
-        locked = "images/Locked.png"
-        self.theme.add_button_textures(normal, hover, clicked, locked)
-
+        self.theme = getButtonThemes()
         self.button_list.append(PlayButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.4, 110, 50, theme=self.theme))
         self.button_list.append(ExitButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.4, 110, 50, theme=self.theme))
 
@@ -122,19 +156,14 @@ class CharacterSelect(arcade.View):
     def __init__(self):
         super().__init__()
 
-        self.theme = Theme()
-        self.theme.set_font(24, arcade.color.BLACK)
-        normal = "images/Normal.png"
-        hover = "images/Hover.png"
-        clicked = "images/Clicked.png"
-        locked = "images/Locked.png"
-        self.theme.add_button_textures(normal, hover, clicked, locked)
-
-        self.button_list.append(StartButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 110, 50, theme=self.theme))
-        self.button_list.append(CreateButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 110, 50, theme=self.theme))
+        self.theme = getButtonThemes()
+        self.button_list.append(ChooseButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 130, 50, theme=self.theme))
+        self.button_list.append(CreateButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 130, 50, theme=self.theme))
     
     def on_show(self):
+        global characterSelected
         arcade.set_background_color(arcade.color.GRAY)
+        characterSelected = True
 
     def on_draw(self):
         global characterSelected, attemptedPlay
@@ -151,12 +180,39 @@ class CharacterSelect(arcade.View):
         pass
 
 class CharacterCreation(arcade.View):
+    #-----------------------------------------   STILL UNDER CONSTRUCTION   ----------------------------------------#
+    def __init__(self):
+        super().__init__()
+
+        self.theme = getButtonThemes()
+        self.button_list.append(ChooseButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 130, 50, theme=self.theme))
+        self.button_list.append(CreateButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 130, 50, theme=self.theme))
+
     def on_show(self):
         arcade.set_background_color(arcade.color.GRAY)
 
     def on_draw(self):
         arcade.start_render()
-        arcade.draw_text("Character Creation", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.8, arcade.color.BLACK, font_size=30, anchor_x="center")
+        arcade.draw_text("Character Creation (UNDER CONSTRUCTION)", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.8, arcade.color.BLACK, font_size=30, anchor_x="center")
+
+class ModeSelect(arcade.View):
+    def __init__(self, prev_view):
+        super().__init__()
+        self.prev_view = prev_view
+
+        self.theme = getButtonThemes()
+        self.button_list.append(SinglePlayerButton(self, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.6, 400, 50, theme=self.theme))
+        self.button_list.append(ArenaButton(self, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.4, 250, 50, theme=self.theme))
+        self.button_list.append(BackButton(self.prev_view, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.2, 100, 50, theme=self.theme))
+
+    def on_show(self):
+        arcade.set_background_color(arcade.color.GRAY)
+
+    def on_draw(self):
+        arcade.start_render()
+        arcade.draw_text("Choose what you would like to do:", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.8, arcade.color.BLACK, font_size=30, anchor_x="center")
+        for button in self.button_list:
+            button.draw()
 
 class PauseMenu(arcade.View):
     # For pause and unpause to work, the call to PauseMenu must have self sent with it, so pause = PauseMenu(self), then self.window.show_view(pause)
@@ -164,14 +220,7 @@ class PauseMenu(arcade.View):
         super().__init__()
         self.game_view = game_view
 
-        self.theme = Theme()
-        self.theme.set_font(24, arcade.color.BLACK)
-        normal = "images/Normal.png"
-        hover = "images/Hover.png"
-        clicked = "images/Clicked.png"
-        locked = "images/Locked.png"
-        self.theme.add_button_textures(normal, hover, clicked, locked)
-
+        self.theme = getButtonThemes()
         self.button_list.append(ContinueButton(self.game_view, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 110, 50, theme=self.theme))
         self.button_list.append(MainMenuButton(self.game_view, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 110, 50, theme=self.theme))
 
@@ -207,13 +256,71 @@ class PauseMenu(arcade.View):
         for button in self.button_list:
             button.draw()
 
-    # DON'T WANT THIS -- WE'RE USING BUTTONS TO RESUME/QUIT
-    # def on_key_press(self, key, _modifiers):
-    #     if key == arcade.key.ESCAPE:   # resume game
-    #         self.window.show_view(self.game_view)
-    #     elif key == arcade.key.ENTER:  # reset game
-    #         game = GameView()
-    #         self.window.show_view(game)
+class PvpArena(arcade.View):
+    def __init__(self):
+        super().__init__()
+
+        # Set up the empty sprite lists
+        self.enemies_list = arcade.SpriteList()
+        self.bullets_list = arcade.SpriteList()
+        self.all_sprites = arcade.SpriteList()
+
+        self.player_velocity = 15
+
+    def setup(self):
+        # Set the background color
+        arcade.set_background_color(arcade.color.GRAY)
+
+        # Set up ALL players (pull them from DB, etc)
+        self.player = arcade.Sprite("images/player_sprite.png", 0.25)
+        self.player.center_y = SCREEN_HEIGHT/2
+        self.player.left = SCREEN_WIDTH/2
+        self.all_sprites.append(self.player)
+
+        # Spawn a new enemy every 0.5 seconds
+        #arcade.schedule(self.add_enemy, 0.5)
+
+    def on_show(self):
+        # Set the background color
+        arcade.set_background_color(arcade.color.GRAY)
+
+    def on_update(self, delta_time: float):
+        # If paused, don't update anything
+        #if arcade.paused:
+        #    return
+
+        # Did you hit an enemy?
+        if self.player.collides_with_list(self.enemies_list):
+            if not self.GOD_MODE:
+                arcade.close_window()
+
+        # Update everything
+        self.all_sprites.update()
+
+        # Keep the player on screen
+        if self.player.top > SCREEN_HEIGHT:
+            self.player.top = SCREEN_HEIGHT
+        elif self.player.right > SCREEN_WIDTH:
+            self.player.right = SCREEN_WIDTH
+        elif self.player.bottom < 0:
+            self.player.bottom = 0
+        elif self.player.left < 0:
+            self.player.left = 0
+
+    def on_draw(self):
+        # Begin rendering (will end automatically after method ends)
+        arcade.start_render()
+
+        # Draw scoreboard text
+        # self.score_text = arcade.draw_text("SCORE: {}".format(str(self.score)), SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
+        # self.level_text = arcade.draw_text("Level: {}".format(str(self.level)), SCREEN_WIDTH - 175, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
+        
+        # Sanity check to let you know that god mode is active when using it
+        #if self.GOD_MODE:
+            #self.godmode_active_text = arcade.draw_text("GOD MODE ACTIVE", SCREEN_WIDTH*0.02, SCREEN_HEIGHT - 35, arcade.color.BLACK, 20)
+
+        self.all_sprites.draw()
+
 
 class Onslaught(arcade.View):
     def __init__(self):

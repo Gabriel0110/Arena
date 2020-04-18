@@ -25,6 +25,7 @@ class Database:
         self.create_characters_table = """CREATE TABLE IF NOT EXISTS characters (
                                         char_id INTEGER PRIMARY KEY,
                                         acct_id INTEGER NOT NULL,
+                                        char_texture VARCHAR(100) NOT NULL,
                                         char_name VARCHAR(40) NOT NULL,
                                         char_class VARCHAR(30) NOT NULL,
                                         char_level INTEGER NOT NULL,
