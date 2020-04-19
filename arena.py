@@ -221,32 +221,42 @@ class MainMenu(arcade.View):
         super().__init__()
 
         self.theme = getButtonThemes()
-        self.button_list.append(PlayButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.4, 110, 50, theme=self.theme))
-        self.button_list.append(ExitButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.4, 110, 50, theme=self.theme))
+        self.button_list.append(PlayButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.25, 110, 50, theme=self.theme))
+        self.button_list.append(ExitButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.25, 110, 50, theme=self.theme))
+
+        self.background = self.background = arcade.load_texture("images/title_screen_img.jpg")
 
     def on_show(self):
         arcade.set_background_color(arcade.color.GRAY)
 
     def on_draw(self):
         arcade.start_render()
-        arcade.draw_text("Onslaught", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.7, arcade.color.BLACK, font_size=50, font_name='GOTHIC', anchor_x="center")
+        scale = SCREEN_WIDTH / self.background.width
+        arcade.draw_lrwh_rectangle_textured(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, self.background)
+        arcade.draw_text("ONSLAUGHT", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.7, arcade.color.WHITE, font_size=50, font_name='GOTHIC', anchor_x="center", bold=True)
         for button in self.button_list:
             button.draw()
 
 class CharacterSelect(arcade.View):
     def __init__(self):
-        global loaded_characters, character_slot_locations, characterSelected, total_characters
+        global loaded_characters, character_slot_locations, characterSelected, total_characters, max_characters
         super().__init__()
 
-        self.theme = getButtonThemes()
-        self.button_list.append(ChooseButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 130, 50, theme=self.theme))
-        self.button_list.append(CreateButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 130, 50, theme=self.theme))
-
-        characterSelected = False
+        self.maxCharsText = False
 
         # Pull all characters from DB for player account that is logged in
         loaded_characters = self.getCharacters()
         total_characters = len(loaded_characters)
+
+        self.theme = getButtonThemes()
+        self.button_list.append(ChooseButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 130, 50, theme=self.theme))
+
+        if total_characters < max_characters:
+            self.button_list.append(CreateButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 130, 50, theme=self.theme))
+        else:
+            self.maxCharsText = True
+
+        characterSelected = False
 
         # Make character buttons for each character, looping through characters with character_slot_locations to place buttons
         if len(loaded_characters) > 0:
@@ -254,7 +264,6 @@ class CharacterSelect(arcade.View):
             for char_id, char_info in loaded_characters.items():
                 self.button_list.append(CharacterButton(self, character_slot_locations[slot-1][0], character_slot_locations[slot-1][1], 350, 150, theme=self.theme, char_name=char_info[1], char_level=char_info[4], char_class=char_info[3]))
                 slot += 1
-
     
     def on_show(self):
         arcade.set_background_color(arcade.color.GRAY)
@@ -267,6 +276,10 @@ class CharacterSelect(arcade.View):
         arcade.draw_text("Choose one of your current characters to\ncontinue playing, or create a new one!", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.8, arcade.color.BLACK, font_size=20, anchor_x="center")
         for button in self.button_list:
             button.draw()
+
+        # Instead of create button, tell user character limit is reached
+        if self.maxCharsText:
+            arcade.draw_text("Character Limit\nReached", SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, arcade.color.BLACK, font_size=15, anchor_x="center")
 
         if len(loaded_characters) == 0:
             arcade.draw_text("NO CHARACTERS AVAILABLE", SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.BLACK, font_size=30, anchor_x="center")
