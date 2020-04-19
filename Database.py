@@ -39,7 +39,9 @@ class Database:
                                         char_spell_crit_chance FLOAT NOT NULL,
                                         char_spell_power INTEGER NOT NULL,
                                         char_attack_power INTEGER NOT NULL,
-                                        char_move_speed FLOAT NOT NULL
+                                        char_move_speed FLOAT NOT NULL,
+                                        curr_exp INTEGER NOT NULL,
+                                        curr_pvp_rank INTEGER NOT NULL
                                     ); """
 
         self.create_spells_table = """CREATE TABLE IF NOT EXISTS spells (
@@ -50,6 +52,11 @@ class Database:
                                         spell_mana_cost INTEGER NOT NULL,
                                         spell_hasDamage BOOLEAN NOT NULL,
                                         spell_damage INTEGER
+                                    ); """
+
+        self.game_stats_table = """CREATE TABLE IF NOT EXISTS game_stats (
+                                        char_id INTEGER PRIMARY KEY,
+                                        curr_sp_wave INTEGER NOT NULL
                                     ); """
 
         if self.conn is not None:

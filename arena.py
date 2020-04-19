@@ -35,20 +35,34 @@ CURRENT_USERNAME = ""
 CURRENT_ACCT_ID = None
 CURRENT_CHAR = None
 
-STAMINA_HEALTH_MULTIPLIER = 12 # each stamina point gives 12 hp
-INTELLECT_MANA_MULTIPLIER = 10 # each intellect point gives 10 mana
+class GameSettings():
+    def __init__(self):
+        self.level_exp_requirements = {}
+        self.setLevelRequirements()
 
-AGILITY_CRIT_MULTIPLIER = 0.05 # each agility point gives 0.05% melee/range crit chance
-INTELLECT_CRIT_MULTIPLIER = 0.05 # each intellect point gives 0.05% SPELL crit chance
+        self.STAMINA_HEALTH_MULTIPLIER = 12 # each stamina point gives 12 hp
+        self.INTELLECT_MANA_MULTIPLIER = 10 # each intellect point gives 10 mana
 
-AGILITY_AP_MULTIPLIER = 2 # each point of agility gives 2 attack power
-STRENGTH_AP_MULTIPLIER = 4 # each point of strength gives 4 attack power
-AP_DAMAGE_MULTIPLIER = 2 # each point of attack power increases melee/ranged damage by 2  (WILL NEED TO MULTIPLY THIS TO ABILITY DAMAGE)
+        self.AGILITY_CRIT_MULTIPLIER = 0.05 # each agility point gives 0.05% melee/range crit chance
+        self.INTELLECT_CRIT_MULTIPLIER = 0.05 # each intellect point gives 0.05% SPELL crit chance
 
-INTELLECT_SP_MULTIPLIER = 2 # each point of intellect gives 2 spell power
-SP_DAMAGE_MULTIPLIER = 2 # each point of spell power inceases spell damage by 2  (WILL NEED TO MULTIPLY THIS TO ABILITY DAMAGE)
+        self.AGILITY_AP_MULTIPLIER = 2 # each point of agility gives 2 attack power
+        self.STRENGTH_AP_MULTIPLIER = 4 # each point of strength gives 4 attack power
+        self.AP_DAMAGE_MULTIPLIER = 2 # each point of attack power increases melee/ranged damage by 2  (WILL NEED TO MULTIPLY THIS TO ABILITY DAMAGE)
 
+        self.INTELLECT_SP_MULTIPLIER = 2 # each point of intellect gives 2 spell power
+        self.SP_DAMAGE_MULTIPLIER = 2 # each point of spell power inceases spell damage by 2  (WILL NEED TO MULTIPLY THIS TO ABILITY DAMAGE)
 
+    def setLevelRequirements(self):
+        # Populates level exp requirements dict with all experience points required to get to each level (current max level is 50)
+        level_req = 400
+        self.level_exp_requirements = {}
+        for level in range(2, 51):
+            if level == 2:
+                level_exp_requirements[level] = level_req
+            else:
+                level_exp_requirements[level] = level_req
+            level_req *= 1.3
 
 def createAlert(text, title, button):
     pyautogui.alert(text=text, title=title, button=button)
@@ -300,8 +314,8 @@ class CharacterSelect(arcade.View):
             characters = c.execute("""SELECT * FROM characters WHERE acct_id = ?""", (CURRENT_ACCT_ID,)).fetchall()
 
             char_dict = {}
-            for (char_id, acct_id, char_name, char_texture, char_class, char_level, char_health, char_mana, char_strength, char_stamina, char_intellect, char_agility, char_attk_crit_chance, char_spell_crit_chance, char_spell_power, char_attack_power, char_move_speed) in characters:
-                char_dict[char_id] = [acct_id, char_name, char_texture, char_class, char_level, char_health, char_mana, char_strength, char_stamina, char_intellect, char_agility, char_attk_crit_chance, char_spell_crit_chance, char_spell_power, char_attack_power, char_move_speed]
+            for (char_id, acct_id, char_name, char_texture, char_class, char_level, char_health, char_mana, char_strength, char_stamina, char_intellect, char_agility, char_attk_crit_chance, char_spell_crit_chance, char_spell_power, char_attack_power, char_move_speed, curr_exp, curr_pvp_rank) in characters:
+                char_dict[char_id] = [acct_id, char_name, char_texture, char_class, char_level, char_health, char_mana, char_strength, char_stamina, char_intellect, char_agility, char_attk_crit_chance, char_spell_crit_chance, char_spell_power, char_attack_power, char_move_speed, curr_exp, curr_pvp_rank]
             print("CHAR_DICT: {}".format(char_dict))
             return char_dict
         except Error as e:
@@ -402,13 +416,15 @@ class CharacterCreationView(arcade.View):
             char_strength = 5
             char_intellect = 5
             char_agility = 5
-            char_attk_crit_chance = char_agility * AGILITY_CRIT_MULTIPLIER
-            char_spell_crit_chance = char_intellect * INTELLECT_CRIT_MULTIPLIER
-            char_spell_power = char_intellect * INTELLECT_SP_MULTIPLIER
-            char_attack_power = char_agility * AGILITY_AP_MULTIPLIER + char_strength * STRENGTH_AP_MULTIPLIER
+            char_attk_crit_chance = char_agility * GameSettings.AGILITY_CRIT_MULTIPLIER
+            char_spell_crit_chance = char_intellect * GameSettings.INTELLECT_CRIT_MULTIPLIER
+            char_spell_power = char_intellect * GameSettings.INTELLECT_SP_MULTIPLIER
+            char_attack_power = char_agility * GameSettings.AGILITY_AP_MULTIPLIER + char_strength * GameSettings.STRENGTH_AP_MULTIPLIER
             char_move_speed = 10
-            char_health = char_stamina * STAMINA_HEALTH_MULTIPLIER
-            char_mana = char_intellect * INTELLECT_MANA_MULTIPLIER
+            char_health = char_stamina * GameSettings.STAMINA_HEALTH_MULTIPLIER
+            char_mana = char_intellect * GameSettings.INTELLECT_MANA_MULTIPLIER
+            curr_exp = 0
+            curr_pvp_rank = 0
         elif self.char_class in ["Mage", "Necromancer"]:
             char_texture = "images/adventurer_stand.png" if char_class == "Mage" else "images/adventurer_stand.png"
             char_level = 1
@@ -416,18 +432,20 @@ class CharacterCreationView(arcade.View):
             char_strength = 5
             char_intellect = 5
             char_agility = 5
-            char_attk_crit_chance = char_agility * AGILITY_CRIT_MULTIPLIER
-            char_spell_crit_chance = char_intellect * INTELLECT_CRIT_MULTIPLIER
-            char_spell_power = char_intellect * INTELLECT_SP_MULTIPLIER
-            char_attack_power = char_agility * AGILITY_AP_MULTIPLIER + char_strength * STRENGTH_AP_MULTIPLIER
+            char_attk_crit_chance = char_agility * GameSettings.AGILITY_CRIT_MULTIPLIER
+            char_spell_crit_chance = char_intellect * GameSettings.INTELLECT_CRIT_MULTIPLIER
+            char_spell_power = char_intellect * GameSettings.INTELLECT_SP_MULTIPLIER
+            char_attack_power = char_agility * GameSettings.AGILITY_AP_MULTIPLIER + char_strength * GameSettings.STRENGTH_AP_MULTIPLIER
             char_move_speed = 10
-            char_health = char_stamina * STAMINA_HEALTH_MULTIPLIER
-            char_mana = char_intellect * INTELLECT_MANA_MULTIPLIER
+            char_health = char_stamina * GameSettings.STAMINA_HEALTH_MULTIPLIER
+            char_mana = char_intellect * GameSettings.INTELLECT_MANA_MULTIPLIER
+            curr_exp = 0
+            curr_pvp_rank = 0
 
         # Insert char_id (should be CURRENT_ACCT_ID -- a global variable), acct_id, char_name, char_texture, char_class and ALL of the starter stats created above into the characters DB
         insertions = {}
-        query = """INSERT INTO characters VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
-        values = (int(char_id), str(CURRENT_ACCT_ID), str(self.char_name), str(char_texture), str(self.char_class), int(char_level), int(char_health), int(char_mana), int(char_strength), int(char_stamina), int(char_intellect), int(char_agility), float(char_attk_crit_chance), float(char_spell_crit_chance), int(char_spell_power), int(char_attack_power), int(char_move_speed))
+        query = """INSERT INTO characters VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+        values = (int(char_id), str(CURRENT_ACCT_ID), str(self.char_name), str(char_texture), str(self.char_class), int(char_level), int(char_health), int(char_mana), int(char_strength), int(char_stamina), int(char_intellect), int(char_agility), float(char_attk_crit_chance), float(char_spell_crit_chance), int(char_spell_power), int(char_attack_power), int(char_move_speed), int(curr_exp), int(curr_pvp_rank))
         insertions[values] = query
 
         result = db.insert(insertions)
