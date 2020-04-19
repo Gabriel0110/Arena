@@ -14,11 +14,41 @@ from datetime import datetime
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
 SCREEN_TITLE = "Onslaught"
+char_creation_root = None
+root_master = None
+
 game = None
 characterSelected = False
+char_selected_bttn_loc = []
 attemptedPlay = False
-total_characters = 0
+selected_class = ""
+selected_class_bttn_loc = []
+char_creation_name = ""
+createButtonPressed = False
+
+total_characters = 0  # INCREMENT THIS WHEN CHARACTERS ARE CREATED FOR ACCOUNT, and NEED TO CHECK BEFORE CREATION
 max_characters = 4
+character_slot_locations = [[SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.60], [SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.60], [SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.32], [SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.32]]
+loaded_characters = {}
+all_char_ids = []
+CURRENT_USERNAME = ""
+CURRENT_ACCT_ID = None
+CURRENT_CHAR = None
+
+STAMINA_HEALTH_MULTIPLIER = 12 # each stamina point gives 12 hp
+INTELLECT_MANA_MULTIPLIER = 10 # each intellect point gives 10 mana
+
+AGILITY_CRIT_MULTIPLIER = 0.05 # each agility point gives 0.05% melee/range crit chance
+INTELLECT_CRIT_MULTIPLIER = 0.05 # each intellect point gives 0.05% SPELL crit chance
+
+AGILITY_AP_MULTIPLIER = 2 # each point of agility gives 2 attack power
+STRENGTH_AP_MULTIPLIER = 4 # each point of strength gives 4 attack power
+AP_DAMAGE_MULTIPLIER = 2 # each point of attack power increases melee/ranged damage by 2  (WILL NEED TO MULTIPLY THIS TO ABILITY DAMAGE)
+
+INTELLECT_SP_MULTIPLIER = 2 # each point of intellect gives 2 spell power
+SP_DAMAGE_MULTIPLIER = 2 # each point of spell power inceases spell damage by 2  (WILL NEED TO MULTIPLY THIS TO ABILITY DAMAGE)
+
+
 
 def createAlert(text, title, button):
     pyautogui.alert(text=text, title=title, button=button)
@@ -33,10 +63,9 @@ def getButtonThemes():
     theme.add_button_textures(normal, hover, clicked, locked)
     return theme
 
-
-###################################
-#            BUTTONS              #
-###################################
+#########################################################################################################
+#                                                BUTTONS                                                #
+#########################################################################################################
 
 class BackButton(TextButton):
     def __init__(self, view, x=0, y=0, width=100, height=40, text="Back", theme=None):
@@ -93,11 +122,14 @@ class CreateButton(TextButton):
         super().__init__(x, y, width, height, text, theme=theme)
 
     def on_press(self):
-        global game, total_characters, max_characters
+        global game, total_characters, max_characters, char_creation_root, createButtonPressed
         if total_characters < max_characters:
-            game.show_view(CharacterCreation())
+            game.show_view(CharacterCreationView())
+            createButtonPressed = False
         elif total_characters == max_characters:
+            createAlert("You have too many characters! Please delete one to create a free slot.", "Error", "OK")
             print("You have too many characters! Please delete one to create a free slot.")
+
 
 class ChooseButton(TextButton):
     def __init__(self, view, x=0, y=0, width=100, height=40, text="Choose", theme=None):
@@ -118,10 +150,20 @@ class ChooseButton(TextButton):
 class PlayButton(TextButton):
     def __init__(self, view, x=0, y=0, width=100, height=40, text="Play", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
+        self.view = view
+        self.text = text
 
     def on_press(self):
-        global game
-        game.show_view(CharacterSelect())
+        global game, createButtonPressed, char_creation_name
+        if "CharacterCreationView" in str(game.current_view):
+            createButtonPressed = True
+            if len(char_creation_name) > 0: 
+                pass
+            else:
+                createAlert("A character name is required!", "Error", "OK")
+                createButtonPressed = False
+        if "MainMenu" in str(game.current_view):
+            game.show_view(CharacterSelect())
 
 class ExitButton(TextButton):
     def __init__(self, view, x=0, y=0, width=100, height=40, text="Exit", theme=None):
@@ -132,7 +174,46 @@ class ExitButton(TextButton):
         db.conn.close()
         exit()
 
-#---------------------------------------------------------------------------------------------------------------#
+class ClassButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=100, height=40, text="Class", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+        self.text = text
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+
+    def on_press(self):
+        global selected_class, selected_class_bttn_loc
+        selected_class = self.text
+        selected_class_bttn_loc = [self.x, self.y, self.width, self.height]
+
+class NameButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=100, height=40, text="Choose Name", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+
+    def on_press(self):
+        global char_creation_name
+        char_creation_name = pyautogui.prompt("What will your character's name be?")
+
+#-------------------------------------------  CHARACTER SELECT BUTTON   ---------------------------------------------#
+
+class CharacterButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=150, height=100, text="", theme=None, char_name="", char_level=1, char_class=""):
+        super().__init__(x, y, width, height, text, theme=theme)
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.text = "Character: {}\nClass: {}\nLevel: {}".format(char_name, char_class, char_level)
+
+    def on_press(self):
+        global characterSelected, CURRENT_CHAR, char_selected_bttn_loc
+        char_selected_bttn_loc = [self.x, self.y, self.width, self.height]
+        characterSelected = True
+        CURRENT_CHAR = self.char_name
+
+#######################################################################################################################
 
 
 class MainMenu(arcade.View):
@@ -154,24 +235,44 @@ class MainMenu(arcade.View):
 
 class CharacterSelect(arcade.View):
     def __init__(self):
+        global loaded_characters, character_slot_locations, characterSelected, total_characters
         super().__init__()
 
         self.theme = getButtonThemes()
         self.button_list.append(ChooseButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 130, 50, theme=self.theme))
         self.button_list.append(CreateButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 130, 50, theme=self.theme))
+
+        characterSelected = False
+
+        # Pull all characters from DB for player account that is logged in
+        loaded_characters = self.getCharacters()
+        total_characters = len(loaded_characters)
+
+        # Make character buttons for each character, looping through characters with character_slot_locations to place buttons
+        if len(loaded_characters) > 0:
+            slot = 1
+            for char_id, char_info in loaded_characters.items():
+                self.button_list.append(CharacterButton(self, character_slot_locations[slot-1][0], character_slot_locations[slot-1][1], 350, 150, theme=self.theme, char_name=char_info[1], char_level=char_info[4], char_class=char_info[3]))
+                slot += 1
+
     
     def on_show(self):
-        global characterSelected
         arcade.set_background_color(arcade.color.GRAY)
-        characterSelected = True
+        print("ENTERED CHARACTER SELECT")
 
     def on_draw(self):
-        global characterSelected, attemptedPlay
+        global characterSelected, attemptedPlay, loaded_characters, char_selected_bttn_loc
         arcade.start_render()
-        arcade.draw_text("Character Select", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.8, arcade.color.BLACK, font_size=30, anchor_x="center")
-        arcade.draw_text("Choose one of your current characters to\ncontinue playing, or create a new one!", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.7, arcade.color.BLACK, font_size=20, anchor_x="center")
+        arcade.draw_text("Character Select", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.9, arcade.color.BLACK, font_size=30, anchor_x="center")
+        arcade.draw_text("Choose one of your current characters to\ncontinue playing, or create a new one!", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.8, arcade.color.BLACK, font_size=20, anchor_x="center")
         for button in self.button_list:
             button.draw()
+
+        if len(loaded_characters) == 0:
+            arcade.draw_text("NO CHARACTERS AVAILABLE", SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.BLACK, font_size=30, anchor_x="center")
+
+        if characterSelected:
+            arcade.draw_rectangle_outline(char_selected_bttn_loc[0], char_selected_bttn_loc[1], char_selected_bttn_loc[2]+20, char_selected_bttn_loc[3]+20, arcade.color.BLACK)
 
         if attemptedPlay and not characterSelected:
             arcade.draw_text("You must select a character to play.", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.03, arcade.color.BLACK, font_size=30, anchor_x="center")
@@ -179,21 +280,162 @@ class CharacterSelect(arcade.View):
     def on_update(self, delta_time: float):
         pass
 
-class CharacterCreation(arcade.View):
-    #-----------------------------------------   STILL UNDER CONSTRUCTION   ----------------------------------------#
+    def getCharacters(self):
+        global CURRENT_ACCT_ID
+        c = db.conn.cursor()
+        try:
+            characters = c.execute("""SELECT * FROM characters WHERE acct_id = ?""", (CURRENT_ACCT_ID,)).fetchall()
+
+            char_dict = {}
+            for (char_id, acct_id, char_name, char_texture, char_class, char_level, char_health, char_mana, char_strength, char_stamina, char_intellect, char_agility, char_attk_crit_chance, char_spell_crit_chance, char_spell_power, char_attack_power, char_move_speed) in characters:
+                char_dict[char_id] = [acct_id, char_name, char_texture, char_class, char_level, char_health, char_mana, char_strength, char_stamina, char_intellect, char_agility, char_attk_crit_chance, char_spell_crit_chance, char_spell_power, char_attack_power, char_move_speed]
+            print("CHAR_DICT: {}".format(char_dict))
+            return char_dict
+        except Error as e:
+            print(e)
+
+class CharacterCreationView(arcade.View):
     def __init__(self):
         super().__init__()
+        print("CHARACTERCREATIONVIEW ENTERED")
 
         self.theme = getButtonThemes()
-        self.button_list.append(ChooseButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 130, 50, theme=self.theme))
-        self.button_list.append(CreateButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 130, 50, theme=self.theme))
+        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.7, 220, 50, text="Ninja", theme=self.theme))
+        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.7, 220, 50, text="Warrior", theme=self.theme))
+        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.5, 220, 50, text="Mage", theme=self.theme))
+        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.5, 220, 50, text="Necromancer", theme=self.theme))
+
+        self.button_list.append(PlayButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.1, 110, 50, text="Create", theme=self.theme))
+        self.button_list.append(BackButton(CharacterSelect(), SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.1, 110, 50, text="Back", theme=self.theme))
+
+        self.button_list.append(NameButton(self, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.3, 230, 50, text="Choose Name", theme=self.theme))
+
+        # self.text_list.append(arcade.TextLabel("Name: ", self.center_x - 225, self.center_y))
+        # self.textbox_list.append(arcade.TextBox(self.center_x - 125, self.center_y))
+        # self.button_list.append(arcade.SubmitButton(self.textbox_list[0], self.on_submit, self.center_x, self.center_y))
 
     def on_show(self):
         arcade.set_background_color(arcade.color.GRAY)
 
     def on_draw(self):
+        global selected_class, selected_class_bttn_loc
         arcade.start_render()
-        arcade.draw_text("Character Creation (UNDER CONSTRUCTION)", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.8, arcade.color.BLACK, font_size=30, anchor_x="center")
+        arcade.draw_text("CHARACTER CREATION", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.9, arcade.color.BLACK, font_size=25, anchor_x="center")
+        for button in self.button_list:
+            button.draw()
+        if selected_class:
+            arcade.draw_text("Selected class: {}".format(selected_class), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.025, arcade.color.BLACK, font_size=20, anchor_x="center")
+            arcade.draw_rectangle_outline(selected_class_bttn_loc[0], selected_class_bttn_loc[1], selected_class_bttn_loc[2]+20, selected_class_bttn_loc[3]+20, arcade.color.BLACK)
+
+    def on_update(self, delta_time: float):
+        global createButtonPressed, char_creation_name, selected_class
+        if createButtonPressed and len(char_creation_name) > 0:
+            print("CREATE BUTTON PRESSED -- PROCESSING CREATION...")
+            self.processCreation(char_creation_name, selected_class)
+            createButtonPressed = False
+
+    def processCreation(self, name, clss):
+        global game, loaded_characters
+        if not name:
+            print("A name is required!")
+            createAlert("A character name is required!", "Error", "OK")
+            return
+        else:
+            # Check if there are any characters in database with that name already
+            c = db.conn.cursor()
+            try:
+                char_names = c.execute("""SELECT char_name FROM characters""").fetchall()
+            except Error as e:
+                print(e)
+            
+            if name not in char_names:
+                # Name not taken - CREATE CHARACTER
+                self.char_name = name
+                self.char_class = clss
+                print("CREATING CHARACTER: {} of the {} class.".format(self.char_name, self.char_class))
+                self.createCharacter(self.char_name, self.char_class)
+                
+                #loaded_characters[1] = "test"
+                #game.show_view(CharacterSelect())
+            else:
+                # Name taken - DO NOT CREATE CHARACTER
+                print("Name already taken!")
+                createAlert("That name is already taken! Try a different one.", "Error", "OK")
+                return
+            
+    def createCharacter(self, char_name, char_class):
+        global game, all_char_ids, CURRENT_ACCT_ID, total_characters
+
+        self.char_name = char_name
+        self.char_class = char_class
+        all_char_ids = self.getCharIds()
+        print("CHAR IDs: {}".format(all_char_ids))
+
+        char_id = 0
+        # Get char_id that is not currently in the database
+        while True:
+            if char_id in all_char_ids:
+                print("Character ID already found in DB -- incrementing ID")
+                char_id += 1
+            else:
+                break
+
+        # Set all starter stats based on the class chosen (INCLUDING WHICH TEXTURE WILL BE USED)
+        # STAT VALUES ARE ARBITRARY RIGHT NOW -- just putting something there to satisfy
+        if self.char_class in ["Ninja", "Warrior"]:
+            char_texture = "images/player_stand.png" if char_class == "Ninja" else "images/player_stand.png"
+            char_level = 1
+            char_stamina = 9
+            char_strength = 5
+            char_intellect = 5
+            char_agility = 5
+            char_attk_crit_chance = char_agility * AGILITY_CRIT_MULTIPLIER
+            char_spell_crit_chance = char_intellect * INTELLECT_CRIT_MULTIPLIER
+            char_spell_power = char_intellect * INTELLECT_SP_MULTIPLIER
+            char_attack_power = char_agility * AGILITY_AP_MULTIPLIER + char_strength * STRENGTH_AP_MULTIPLIER
+            char_move_speed = 10
+            char_health = char_stamina * STAMINA_HEALTH_MULTIPLIER
+            char_mana = char_intellect * INTELLECT_MANA_MULTIPLIER
+        elif self.char_class in ["Mage", "Necromancer"]:
+            char_texture = "images/adventurer_stand.png" if char_class == "Mage" else "images/adventurer_stand.png"
+            char_level = 1
+            char_stamina = 9
+            char_strength = 5
+            char_intellect = 5
+            char_agility = 5
+            char_attk_crit_chance = char_agility * AGILITY_CRIT_MULTIPLIER
+            char_spell_crit_chance = char_intellect * INTELLECT_CRIT_MULTIPLIER
+            char_spell_power = char_intellect * INTELLECT_SP_MULTIPLIER
+            char_attack_power = char_agility * AGILITY_AP_MULTIPLIER + char_strength * STRENGTH_AP_MULTIPLIER
+            char_move_speed = 10
+            char_health = char_stamina * STAMINA_HEALTH_MULTIPLIER
+            char_mana = char_intellect * INTELLECT_MANA_MULTIPLIER
+
+        # Insert char_id (should be CURRENT_ACCT_ID -- a global variable), acct_id, char_name, char_texture, char_class and ALL of the starter stats created above into the characters DB
+        insertions = {}
+        query = """INSERT INTO characters VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+        values = (int(char_id), str(CURRENT_ACCT_ID), str(self.char_name), str(char_texture), str(self.char_class), int(char_level), int(char_health), int(char_mana), int(char_strength), int(char_stamina), int(char_intellect), int(char_agility), float(char_attk_crit_chance), float(char_spell_crit_chance), int(char_spell_power), int(char_attack_power), int(char_move_speed))
+        insertions[values] = query
+
+        result = db.insert(insertions)
+        if not result:
+            print("Error with submitting new character entries into the database.")
+            return
+        else:
+            print("Character created - New character stats successfully input into database.")
+            createAlert("Character created!", "Success", "OK")
+            total_characters += 1
+            game.show_view(CharacterSelect())
+
+    def getCharIds(self):
+        c = db.conn.cursor()
+        try:
+            id_col = c.execute("""SELECT char_id FROM characters""")
+            ids = [idx[0] for idx in id_col]
+        except Error as e:
+            print(e)
+            exit()
+        return ids
 
 class ModeSelect(arcade.View):
     def __init__(self, prev_view):
@@ -473,15 +715,27 @@ class Bullet(arcade.Sprite):
         if self.collides_with_list(app.enemies_list):
             self.remove_from_sprite_lists()
 
+class Character(arcade.Sprite):
+    def __init__(self, char_id, ):
+        super().init()
+        
+
+    def update(self):
+        super().update()
+
+        if self.dead:
+            self.remove_from_sprite_lists()
 
 class LoginWindow(Frame):
     def __init__(self, master=None): 
+        global root_master
         Frame.__init__(self, master)
 
         self.master.protocol("WM_DELETE_WINDOW", self.client_exit)
                 
         self.master = master
         self.master.geometry("600x400")
+        root_master = self.master
 
         self.game = None
 
@@ -512,6 +766,7 @@ class LoginWindow(Frame):
         forgot_button.grid(row=5, column=2,pady=25)
 
     def processLogin(self, user, pw):
+        global CURRENT_USERNAME, CURRENT_ACCT_ID
         username = user.get()
         password = pw.get()
 
@@ -531,14 +786,13 @@ class LoginWindow(Frame):
             createAlert("Login successful!", "Success!", "OK")
             db.CURRENT_USERNAME = username
             CURRENT_USERNAME = username
+            CURRENT_ACCT_ID = login_info[username][0]
             user.delete(0, END)
             pw.delete(0, END)
             
             # Start game
             self.launchGame()
             root.withdraw()
-
-            ### DESTROY LOGIN WINDOW SOMEHOW ###
 
     def newWindow(self, window):
         self.new = Toplevel(self.master)
@@ -547,7 +801,8 @@ class LoginWindow(Frame):
             root.withdraw() # hide the login window on successful login
 
     def launchGame(self):
-        global game
+        global game, all_char_ids
+
         game = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
         main_menu = MainMenu()
         game.show_view(main_menu)

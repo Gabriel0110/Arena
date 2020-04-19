@@ -25,8 +25,8 @@ class Database:
         self.create_characters_table = """CREATE TABLE IF NOT EXISTS characters (
                                         char_id INTEGER PRIMARY KEY,
                                         acct_id INTEGER NOT NULL,
-                                        char_texture VARCHAR(100) NOT NULL,
                                         char_name VARCHAR(40) NOT NULL,
+                                        char_texture VARCHAR(100) NOT NULL,
                                         char_class VARCHAR(30) NOT NULL,
                                         char_level INTEGER NOT NULL,
                                         char_health INTEGER NOT NULL,
@@ -35,7 +35,8 @@ class Database:
                                         char_stamina INTERGER NOT NULL,
                                         char_intellect INTEGER NOT NULL,
                                         char_agility INTEGER NOT NULL,
-                                        char_crit_chance FLOAT NOT NULL,
+                                        char_attk_crit_chance FLOAT NOT NULL,
+                                        char_spell_crit_chance FLOAT NOT NULL,
                                         char_spell_power INTEGER NOT NULL,
                                         char_attack_power INTEGER NOT NULL,
                                         char_move_speed FLOAT NOT NULL
@@ -106,7 +107,7 @@ class Database:
     def getAcctIds(self):
         c = self.conn.cursor()
         try:
-            id_col = c.execute("""SELECT acct_id FROM accounts""")
+            id_col = c.execute("""SELECT acct_id FROM accounts""").fetchall()
             ids = [idx[0] for idx in id_col]
             #print(ids)
             return ids
@@ -117,11 +118,11 @@ class Database:
     def getLoginInfo(self):
         c = self.conn.cursor()
         try:
-            info = c.execute("""SELECT acct_username, acct_password, acct_email FROM accounts""").fetchall()
+            info = c.execute("""SELECT acct_id, acct_username, acct_password, acct_email FROM accounts""").fetchall()
 
             info_dict = {}
-            for (user, pw, email) in info:
-                info_dict[user] = [pw, email]
+            for (idx, user, pw, email) in info:
+                info_dict[user] = [idx, pw, email]
             print(info_dict)
             return info_dict
         except Error as e:
