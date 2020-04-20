@@ -36,7 +36,6 @@ CURRENT_USERNAME = ""
 CURRENT_ACCT_ID = None
 CURRENT_CHAR = None
 
-
 class GameSettings():
     def __init__(self):
         self.level_exp_requirements = {}
