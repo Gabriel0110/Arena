@@ -14,10 +14,9 @@ from datetime import datetime
 SCREEN_WIDTH = round(pyautogui.size()[0]*0.8)
 SCREEN_HEIGHT = round(pyautogui.size()[1]*0.8)
 SCREEN_TITLE = "Onslaught"
-char_creation_root = None
-root_master = None
 
-game = None
+game = None # HOLDS THE ACTIVE VIEW AND USED TO CHANGE VIEWS
+
 characterSelected = False
 char_selected_bttn_loc = []
 attemptedPlay = False
@@ -204,12 +203,21 @@ class ClassButton(TextButton):
         selected_class_bttn_loc = [self.x, self.y, self.width, self.height]
 
 class NameButton(TextButton):
+    import re
     def __init__(self, view, x=0, y=0, width=100, height=40, text="Choose Name", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
 
     def on_press(self):
         global char_creation_name
-        char_creation_name = pyautogui.prompt("What will your character's name be?")
+        char_creation_name = pyautogui.prompt("What will your character's name be?\n   - Only letters are allowed\n   - Max length is 12 letters")
+        for c in char_creation_name:
+            if not c.isalpha():
+                createAlert("Only letters are allowed for naming. Please try a different name.", "Error", "OK")
+                char_creation_name = ""
+                break
+        if len(char_creation_name) > 12:
+            createAlert("That name is too long. The max length for a name is 12.", "Error", "OK")
+            char_creation_name = ""
 
 #-------------------------------------------  CHARACTER SELECT/DELETE BUTTONS   ---------------------------------------------#
 
@@ -384,14 +392,18 @@ class CharacterCreationView(arcade.View):
         arcade.set_background_color(arcade.color.GRAY)
 
     def on_draw(self):
-        global selected_class, selected_class_bttn_loc
+        global selected_class, selected_class_bttn_loc, char_creation_name
         arcade.start_render()
         arcade.draw_text("CHARACTER CREATION", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.9, arcade.color.BLACK, font_size=25, anchor_x="center")
         for button in self.button_list:
             button.draw()
+
         if selected_class:
             arcade.draw_text("Selected class: {}".format(selected_class), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.025, arcade.color.BLACK, font_size=20, anchor_x="center")
             arcade.draw_rectangle_outline(selected_class_bttn_loc[0], selected_class_bttn_loc[1], selected_class_bttn_loc[2]+20, selected_class_bttn_loc[3]+20, arcade.color.BLACK)
+
+        if len(char_creation_name) > 0:
+            arcade.draw_text("Name: {}".format(char_creation_name), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.1, arcade.color.BLACK, font_size=20, anchor_x="center")
 
     def on_update(self, delta_time: float):
         global createButtonPressed, char_creation_name, selected_class
@@ -410,19 +422,17 @@ class CharacterCreationView(arcade.View):
             # Check if there are any characters in database with that name already
             c = db.conn.cursor()
             try:
-                char_names = c.execute("""SELECT char_name FROM characters""").fetchall()
+                char_names = c.execute("""SELECT char_name FROM characters""")
+                names = [char_name[0] for char_name in char_names]
             except Error as e:
                 print(e)
             
-            if name not in char_names:
+            if name not in names:
                 # Name not taken - CREATE CHARACTER
                 self.char_name = name
                 self.char_class = clss
                 print("CREATING CHARACTER: {} of the {} class.".format(self.char_name, self.char_class))
                 self.createCharacter(self.char_name, self.char_class)
-                
-                #loaded_characters[1] = "test"
-                #game.show_view(CharacterSelect())
             else:
                 # Name taken - DO NOT CREATE CHARACTER
                 print("Name already taken!")
