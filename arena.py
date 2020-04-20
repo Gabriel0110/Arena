@@ -59,9 +59,9 @@ class GameSettings():
         self.level_exp_requirements = {}
         for level in range(2, 51):
             if level == 2:
-                level_exp_requirements[level] = level_req
+                self.level_exp_requirements[level] = level_req
             else:
-                level_exp_requirements[level] = level_req
+                self.level_exp_requirements[level] = level_req
             level_req *= 1.3
 
 def createAlert(text, title, button):
@@ -293,7 +293,7 @@ class CharacterSelect(arcade.View):
 
         # Instead of create button, tell user character limit is reached
         if self.maxCharsText:
-            arcade.draw_text("Character Limit\nReached", SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, arcade.color.BLACK, font_size=15, anchor_x="center")
+            arcade.draw_text("Character Limit\n    Reached!", SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.12, arcade.color.BLACK, font_size=15, anchor_x="center")
 
         if len(loaded_characters) == 0:
             arcade.draw_text("NO CHARACTERS AVAILABLE", SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.BLACK, font_size=30, anchor_x="center")
@@ -393,6 +393,8 @@ class CharacterCreationView(arcade.View):
     def createCharacter(self, char_name, char_class):
         global game, all_char_ids, CURRENT_ACCT_ID, total_characters
 
+        game_settings = GameSettings()
+
         self.char_name = char_name
         self.char_class = char_class
         all_char_ids = self.getCharIds()
@@ -416,13 +418,13 @@ class CharacterCreationView(arcade.View):
             char_strength = 5
             char_intellect = 5
             char_agility = 5
-            char_attk_crit_chance = char_agility * GameSettings.AGILITY_CRIT_MULTIPLIER
-            char_spell_crit_chance = char_intellect * GameSettings.INTELLECT_CRIT_MULTIPLIER
-            char_spell_power = char_intellect * GameSettings.INTELLECT_SP_MULTIPLIER
-            char_attack_power = char_agility * GameSettings.AGILITY_AP_MULTIPLIER + char_strength * GameSettings.STRENGTH_AP_MULTIPLIER
+            char_attk_crit_chance = char_agility * game_settings.AGILITY_CRIT_MULTIPLIER
+            char_spell_crit_chance = char_intellect * game_settings.INTELLECT_CRIT_MULTIPLIER
+            char_spell_power = char_intellect * game_settings.INTELLECT_SP_MULTIPLIER
+            char_attack_power = char_agility * game_settings.AGILITY_AP_MULTIPLIER + char_strength * game_settings.STRENGTH_AP_MULTIPLIER
             char_move_speed = 10
-            char_health = char_stamina * GameSettings.STAMINA_HEALTH_MULTIPLIER
-            char_mana = char_intellect * GameSettings.INTELLECT_MANA_MULTIPLIER
+            char_health = char_stamina * game_settings.STAMINA_HEALTH_MULTIPLIER
+            char_mana = char_intellect * game_settings.INTELLECT_MANA_MULTIPLIER
             curr_exp = 0
             curr_pvp_rank = 0
         elif self.char_class in ["Mage", "Necromancer"]:
@@ -432,13 +434,13 @@ class CharacterCreationView(arcade.View):
             char_strength = 5
             char_intellect = 5
             char_agility = 5
-            char_attk_crit_chance = char_agility * GameSettings.AGILITY_CRIT_MULTIPLIER
-            char_spell_crit_chance = char_intellect * GameSettings.INTELLECT_CRIT_MULTIPLIER
-            char_spell_power = char_intellect * GameSettings.INTELLECT_SP_MULTIPLIER
-            char_attack_power = char_agility * GameSettings.AGILITY_AP_MULTIPLIER + char_strength * GameSettings.STRENGTH_AP_MULTIPLIER
+            char_attk_crit_chance = char_agility * game_settings.AGILITY_CRIT_MULTIPLIER
+            char_spell_crit_chance = char_intellect * game_settings.INTELLECT_CRIT_MULTIPLIER
+            char_spell_power = char_intellect * game_settings.INTELLECT_SP_MULTIPLIER
+            char_attack_power = char_agility * game_settings.AGILITY_AP_MULTIPLIER + char_strength * game_settings.STRENGTH_AP_MULTIPLIER
             char_move_speed = 10
-            char_health = char_stamina * GameSettings.STAMINA_HEALTH_MULTIPLIER
-            char_mana = char_intellect * GameSettings.INTELLECT_MANA_MULTIPLIER
+            char_health = char_stamina * game_settings.STAMINA_HEALTH_MULTIPLIER
+            char_mana = char_intellect * game_settings.INTELLECT_MANA_MULTIPLIER
             curr_exp = 0
             curr_pvp_rank = 0
 
