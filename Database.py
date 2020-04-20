@@ -12,7 +12,7 @@ class Database:
         # Connect to a database, or create + connect at startup
         cwd = os.getcwd()
 
-        self.conn = self.create_connection(cwd + "/arena_db.db")
+        self.conn = self.create_connection(cwd + "/onslaught_db.db")
 
         self.create_accounts_table = """CREATE TABLE IF NOT EXISTS accounts (
                                         acct_id INTEGER PRIMARY KEY,
