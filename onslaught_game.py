@@ -218,6 +218,9 @@ class NameButton(TextButton):
         if len(char_creation_name) > 12:
             createAlert("That name is too long. The max length for a name is 12.", "Error", "OK")
             char_creation_name = ""
+        
+        if len(char_creation_name) > 0:
+            char_creation_name = char_creation_name.title()
 
 #-------------------------------------------  CHARACTER SELECT/DELETE BUTTONS   ---------------------------------------------#
 
@@ -423,13 +426,13 @@ class CharacterCreationView(arcade.View):
             c = db.conn.cursor()
             try:
                 char_names = c.execute("""SELECT char_name FROM characters""")
-                names = [char_name[0] for char_name in char_names]
+                names = [char_name[0].title() for char_name in char_names]
             except Error as e:
                 print(e)
             
-            if name not in names:
+            if name.title() not in names:
                 # Name not taken - CREATE CHARACTER
-                self.char_name = name
+                self.char_name = name.title()
                 self.char_class = clss
                 print("CREATING CHARACTER: {} of the {} class.".format(self.char_name, self.char_class))
                 self.createCharacter(self.char_name, self.char_class)
