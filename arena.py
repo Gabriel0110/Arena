@@ -11,8 +11,8 @@ import os
 import pyautogui
 from datetime import datetime
 
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 800
+SCREEN_WIDTH = round(pyautogui.size()[0]*0.8)
+SCREEN_HEIGHT = round(pyautogui.size()[1]*0.8)
 SCREEN_TITLE = "Onslaught"
 char_creation_root = None
 root_master = None
@@ -25,10 +25,11 @@ selected_class = ""
 selected_class_bttn_loc = []
 char_creation_name = ""
 createButtonPressed = False
+deleteButtonPressed = False
 
 total_characters = 0  # INCREMENT THIS WHEN CHARACTERS ARE CREATED FOR ACCOUNT, and NEED TO CHECK BEFORE CREATION
 max_characters = 4
-character_slot_locations = [[SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.60], [SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.60], [SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.32], [SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.32]]
+character_slot_locations = [[SCREEN_WIDTH*0.23, SCREEN_HEIGHT*0.60], [SCREEN_WIDTH*0.73, SCREEN_HEIGHT*0.60], [SCREEN_WIDTH*0.23, SCREEN_HEIGHT*0.32], [SCREEN_WIDTH*0.73, SCREEN_HEIGHT*0.32]]
 loaded_characters = {}
 all_char_ids = []
 CURRENT_USERNAME = ""
@@ -210,7 +211,7 @@ class NameButton(TextButton):
         global char_creation_name
         char_creation_name = pyautogui.prompt("What will your character's name be?")
 
-#-------------------------------------------  CHARACTER SELECT BUTTON   ---------------------------------------------#
+#-------------------------------------------  CHARACTER SELECT/DELETE BUTTONS   ---------------------------------------------#
 
 class CharacterButton(TextButton):
     def __init__(self, view, x=0, y=0, width=150, height=100, text="", theme=None, char_name="", char_level=1, char_class=""):
@@ -226,6 +227,21 @@ class CharacterButton(TextButton):
         char_selected_bttn_loc = [self.x, self.y, self.width, self.height]
         characterSelected = True
         CURRENT_CHAR = self.char_name
+
+class DeleteButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=150, height=100, text="X", theme=None, char_name=""):
+        super().__init__(x, y, width, height, text, theme=theme)
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.char_name = char_name
+
+    def on_press(self):
+        global CURRENT_CHAR, deleteButtonPressed
+        deleteButtonPressed = True
+        CURRENT_CHAR = self.char_name
+
 
 #######################################################################################################################
 
@@ -277,6 +293,7 @@ class CharacterSelect(arcade.View):
             slot = 1
             for char_id, char_info in loaded_characters.items():
                 self.button_list.append(CharacterButton(self, character_slot_locations[slot-1][0], character_slot_locations[slot-1][1], 350, 150, theme=self.theme, char_name=char_info[1], char_level=char_info[4], char_class=char_info[3]))
+                self.button_list.append(DeleteButton(self, character_slot_locations[slot-1][0]+185, character_slot_locations[slot-1][1]+5, 50, 50, theme=self.theme, text="X", char_name=char_info[1]))
                 slot += 1
     
     def on_show(self):
@@ -284,7 +301,7 @@ class CharacterSelect(arcade.View):
         print("ENTERED CHARACTER SELECT")
 
     def on_draw(self):
-        global characterSelected, attemptedPlay, loaded_characters, char_selected_bttn_loc
+        global game, characterSelected, attemptedPlay, loaded_characters, char_selected_bttn_loc
         arcade.start_render()
         arcade.draw_text("Character Select", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.9, arcade.color.BLACK, font_size=30, anchor_x="center")
         arcade.draw_text("Choose one of your current characters to\ncontinue playing, or create a new one!", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.8, arcade.color.BLACK, font_size=20, anchor_x="center")
@@ -305,7 +322,29 @@ class CharacterSelect(arcade.View):
             arcade.draw_text("You must select a character to play.", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.03, arcade.color.BLACK, font_size=30, anchor_x="center")
 
     def on_update(self, delta_time: float):
-        pass
+        global deleteButtonPressed, CURRENT_CHAR
+        # Trying to delete character?
+        if deleteButtonPressed:
+            ans = pyautogui.confirm(text='Do you really want to delete {}?'.format(CURRENT_CHAR), title='Delete Character?', buttons=['Delete {}'.format(CURRENT_CHAR), 'Cancel'])
+            if "Delete" in ans:
+                print("DELETING {}".format(CURRENT_CHAR))
+                self.deleteCharacter(CURRENT_CHAR)
+                #game._recreate()
+                game.show_view(CharacterSelect())
+                deleteButtonPressed = False
+                CURRENT_CHAR = None
+            else:
+                deleteButtonPressed = False
+                CURRENT_CHAR = None
+
+    def deleteCharacter(self, char):
+        c = db.conn.cursor()
+        try:
+            c.execute("""DELETE FROM characters WHERE char_name = ?""", (char,))
+            db.conn.commit()
+            print("Successfully deleted character.")
+        except Error as e:
+            print(e)
 
     def getCharacters(self):
         global CURRENT_ACCT_ID
@@ -496,8 +535,8 @@ class PauseMenu(arcade.View):
         self.game_view = game_view
 
         self.theme = getButtonThemes()
-        self.button_list.append(ContinueButton(self.game_view, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 110, 50, theme=self.theme))
-        self.button_list.append(MainMenuButton(self.game_view, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 110, 50, theme=self.theme))
+        self.button_list.append(ContinueButton(self.game_view, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 175, 50, theme=self.theme))
+        self.button_list.append(MainMenuButton(self.game_view, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 175, 50, theme=self.theme))
 
     def on_show(self):
         arcade.set_background_color(arcade.color.ORANGE)
@@ -749,15 +788,15 @@ class Bullet(arcade.Sprite):
             self.remove_from_sprite_lists()
 
 class Character(arcade.Sprite):
-    def __init__(self, char_id, ):
+    def __init__(self, char_id):
         super().init()
-        
+        self.char_id = char_id
 
     def update(self):
         super().update()
 
-        if self.dead:
-            self.remove_from_sprite_lists()
+    def castSpell(self, spell):
+        pass
 
 class LoginWindow(Frame):
     def __init__(self, master=None): 
