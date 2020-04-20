@@ -209,14 +209,14 @@ class NameButton(TextButton):
 
     def on_press(self):
         global char_creation_name
-        char_creation_name = pyautogui.prompt("What will your character's name be?\n   - Only letters are allowed\n   - Max length is 12 letters")
+        char_creation_name = pyautogui.prompt("What will your character's name be?\n   - Only letters are allowed\n   - Max length is 10 letters")
         for c in char_creation_name:
             if not c.isalpha():
                 createAlert("Only letters are allowed for naming. Please try a different name.", "Error", "OK")
                 char_creation_name = ""
                 break
-        if len(char_creation_name) > 12:
-            createAlert("That name is too long. The max length for a name is 12.", "Error", "OK")
+        if len(char_creation_name) > 10:
+            createAlert("That name is too long. The max length for a name is 10.", "Error", "OK")
             char_creation_name = ""
         
         if len(char_creation_name) > 0:
@@ -656,6 +656,7 @@ class Onslaught(arcade.View):
         # Set up the empty sprite lists
         self.enemies_list = arcade.SpriteList()
         self.bullets_list = arcade.SpriteList()
+        self.spell_slot_list = arcade.SpriteList()
         self.all_sprites = arcade.SpriteList()
 
         self.player_velocity = 15
@@ -668,10 +669,24 @@ class Onslaught(arcade.View):
         arcade.set_background_color(arcade.color.GRAY)
 
         # Set up the player
-        self.player = arcade.Sprite("images/player_sprite.png", 0.25)
+        self.player = arcade.Sprite("images/adventurer_stand.png", 1.0)
         self.player.center_y = SCREEN_HEIGHT/2
         self.player.left = SCREEN_WIDTH/2
         self.all_sprites.append(self.player)
+
+        # Draw spell bar UI sprites, then add spell images inside them
+        centers = [SCREEN_WIDTH*0.425, SCREEN_WIDTH*0.475, SCREEN_WIDTH*0.525, SCREEN_WIDTH*0.575, SCREEN_WIDTH*0.675]
+        for i in range(5):
+            if i == 4:
+                spell_slot = arcade.Sprite("images/spell_slot.png", 1.0)
+                spell_slot.bottom = SCREEN_HEIGHT*0.05
+                spell_slot.center_x = centers[i]
+            else:
+                spell_slot = arcade.Sprite("images/spell_slot.png", 1.0)
+                spell_slot.bottom = SCREEN_HEIGHT*0.05
+                spell_slot.center_x = centers[i]
+            self.spell_slot_list.append(spell_slot)
+            self.all_sprites.append(spell_slot)
 
         # Spawn a new enemy every 0.5 seconds
         #arcade.schedule(self.add_enemy, 0.5)
@@ -706,6 +721,8 @@ class Onslaught(arcade.View):
     def on_draw(self):
         # Begin rendering (will end automatically after method ends)
         arcade.start_render()
+
+        arcade.draw_text("Trinket", SCREEN_WIDTH*0.6625, SCREEN_HEIGHT*0.025, arcade.color.BLACK, 16, bold=True)
 
         # Draw scoreboard text
         # self.score_text = arcade.draw_text("SCORE: {}".format(str(self.score)), SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
