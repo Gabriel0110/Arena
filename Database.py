@@ -35,7 +35,7 @@ class Database:
                                         char_stamina INTERGER NOT NULL,
                                         char_intellect INTEGER NOT NULL,
                                         char_agility INTEGER NOT NULL,
-                                        char_attk_crit_chance FLOAT NOT NULL,
+                                        char_attack_crit_chance FLOAT NOT NULL,
                                         char_spell_crit_chance FLOAT NOT NULL,
                                         char_spell_power INTEGER NOT NULL,
                                         char_attack_power INTEGER NOT NULL,
@@ -54,9 +54,40 @@ class Database:
                                         spell_damage INTEGER
                                     ); """
 
-        self.game_stats_table = """CREATE TABLE IF NOT EXISTS game_stats (
+        self.create_game_stats_table = """CREATE TABLE IF NOT EXISTS game_stats (
                                         char_id INTEGER PRIMARY KEY,
-                                        curr_sp_wave INTEGER NOT NULL
+                                        curr_wave_number INTEGER NOT NULL
+                                    ); """
+
+        self.create_character_inventories_table = """CREATE TABLE IF NOT EXISTS character_inventories (
+                                        char_id INTEGER PRIMARY KEY,
+                                        head_item VARCHAR(30) NOT NULL,
+                                        shoulder_item VARCHAR(30) NOT NULL,
+                                        chest_item VARCHAR(30) NOT NULL,
+                                        glove_item VARCHAR(30) NOT NULL,
+                                        leg_item VARCHAR(30) NOT NULL,
+                                        foot_item VARCHAR(30) NOT NULL,
+                                        trinket_item VARCHAR(30) NOT NULL,
+                                        weapon_item VARCHAR(30) NOT NULL
+                                    ); """
+
+        self.create_items_table = """CREATE TABLE IF NOT EXISTS items (
+                                        item_id INTEGER PRIMARY KEY,
+                                        item_name VARCHAR(30) NOT NULL,
+                                        item_quality VARCHAR(30) NOT NULL,
+                                        item_type VARCHAR(30) NOT NULL,
+                                        item_lvl_req INTEGER NOT NULL,
+                                        item_class_req VARCHAR(30),
+                                        item_strength INTEGER,
+                                        item_stamina INTEGER,
+                                        item_agility INTEGER,
+                                        item_intellect INTEGER,
+                                        item_attack_crit INTEGER,
+                                        item_spell_crit INTEGER,
+                                        item_attack_power INTEGER,
+                                        item_spell_power INTEGER,
+                                        item_effect INTEGER,
+                                        item_quote VARCHAR(100)
                                     ); """
 
         if self.conn is not None:

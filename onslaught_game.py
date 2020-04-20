@@ -353,8 +353,8 @@ class CharacterSelect(arcade.View):
             characters = c.execute("""SELECT * FROM characters WHERE acct_id = ?""", (CURRENT_ACCT_ID,)).fetchall()
 
             char_dict = {}
-            for (char_id, acct_id, char_name, char_texture, char_class, char_level, char_health, char_mana, char_strength, char_stamina, char_intellect, char_agility, char_attk_crit_chance, char_spell_crit_chance, char_spell_power, char_attack_power, char_move_speed, curr_exp, curr_pvp_rank) in characters:
-                char_dict[char_id] = [acct_id, char_name, char_texture, char_class, char_level, char_health, char_mana, char_strength, char_stamina, char_intellect, char_agility, char_attk_crit_chance, char_spell_crit_chance, char_spell_power, char_attack_power, char_move_speed, curr_exp, curr_pvp_rank]
+            for (char_id, acct_id, char_name, char_texture, char_class, char_level, char_health, char_mana, char_strength, char_stamina, char_intellect, char_agility, char_attack_crit_chance, char_spell_crit_chance, char_spell_power, char_attack_power, char_move_speed, curr_exp, curr_pvp_rank) in characters:
+                char_dict[char_id] = [acct_id, char_name, char_texture, char_class, char_level, char_health, char_mana, char_strength, char_stamina, char_intellect, char_agility, char_attack_crit_chance, char_spell_crit_chance, char_spell_power, char_attack_power, char_move_speed, curr_exp, curr_pvp_rank]
             print("CHAR_DICT: {}".format(char_dict))
             return char_dict
         except Error as e:
@@ -457,7 +457,7 @@ class CharacterCreationView(arcade.View):
             char_strength = 5
             char_intellect = 5
             char_agility = 5
-            char_attk_crit_chance = char_agility * game_settings.AGILITY_CRIT_MULTIPLIER
+            char_attack_crit_chance = char_agility * game_settings.AGILITY_CRIT_MULTIPLIER
             char_spell_crit_chance = char_intellect * game_settings.INTELLECT_CRIT_MULTIPLIER
             char_spell_power = char_intellect * game_settings.INTELLECT_SP_MULTIPLIER
             char_attack_power = char_agility * game_settings.AGILITY_AP_MULTIPLIER + char_strength * game_settings.STRENGTH_AP_MULTIPLIER
@@ -473,7 +473,7 @@ class CharacterCreationView(arcade.View):
             char_strength = 5
             char_intellect = 5
             char_agility = 5
-            char_attk_crit_chance = char_agility * game_settings.AGILITY_CRIT_MULTIPLIER
+            char_attack_crit_chance = char_agility * game_settings.AGILITY_CRIT_MULTIPLIER
             char_spell_crit_chance = char_intellect * game_settings.INTELLECT_CRIT_MULTIPLIER
             char_spell_power = char_intellect * game_settings.INTELLECT_SP_MULTIPLIER
             char_attack_power = char_agility * game_settings.AGILITY_AP_MULTIPLIER + char_strength * game_settings.STRENGTH_AP_MULTIPLIER
@@ -486,7 +486,7 @@ class CharacterCreationView(arcade.View):
         # Insert char_id (should be CURRENT_ACCT_ID -- a global variable), acct_id, char_name, char_texture, char_class and ALL of the starter stats created above into the characters DB
         insertions = {}
         query = """INSERT INTO characters VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
-        values = (int(char_id), str(CURRENT_ACCT_ID), str(self.char_name), str(char_texture), str(self.char_class), int(char_level), int(char_health), int(char_mana), int(char_strength), int(char_stamina), int(char_intellect), int(char_agility), float(char_attk_crit_chance), float(char_spell_crit_chance), int(char_spell_power), int(char_attack_power), int(char_move_speed), int(curr_exp), int(curr_pvp_rank))
+        values = (int(char_id), str(CURRENT_ACCT_ID), str(self.char_name), str(char_texture), str(self.char_class), int(char_level), int(char_health), int(char_mana), int(char_strength), int(char_stamina), int(char_intellect), int(char_agility), float(char_attack_crit_chance), float(char_spell_crit_chance), int(char_spell_power), int(char_attack_power), int(char_move_speed), int(curr_exp), int(curr_pvp_rank))
         insertions[values] = query
 
         result = db.insert(insertions)
