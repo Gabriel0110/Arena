@@ -91,7 +91,7 @@ class Database:
                                     ); """
 
         if self.conn is not None:
-            self.create_tables(self.conn, [self.create_accounts_table, self.create_characters_table, self.create_spells_table])
+            self.create_tables(self.conn, [self.create_accounts_table, self.create_characters_table, self.create_spells_table, self.create_game_stats_table, self.create_character_inventories_table, self.create_items_table])
         else:
             print("Error -- no database connection found.")
             exit()
