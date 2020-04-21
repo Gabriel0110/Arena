@@ -56,7 +56,7 @@ class Database:
 
         self.create_game_stats_table = """CREATE TABLE IF NOT EXISTS game_stats (
                                         char_id INTEGER PRIMARY KEY,
-                                        curr_wave_number INTEGER NOT NULL
+                                        curr_round_number INTEGER NOT NULL
                                     ); """
 
         self.create_character_inventories_table = """CREATE TABLE IF NOT EXISTS character_inventories (

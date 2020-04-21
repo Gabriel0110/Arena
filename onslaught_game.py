@@ -552,6 +552,7 @@ class CharacterCreationView(arcade.View):
             createAlert("Character created!", "Success", "OK")
             total_characters += 1
             game.show_view(CharacterSelect())
+            self.insertGameStats(char_id)
 
     def getCharIds(self):
         c = db.conn.cursor()
@@ -562,6 +563,16 @@ class CharacterCreationView(arcade.View):
             print(e)
             exit()
         return ids
+
+    def insertGameStats(self, char_id):
+        insertions = {}
+        query = """INSERT INTO game_stats VALUES (?, ?);"""
+        values = (int(char_id), 1)
+        insertions[values] = query
+        result = db.insert(insertions)
+        if not result:
+            print("Error with submitting new character game stats (current wave number) into the database.")
+            return
 
 class TalentsAndSpells(arcade.View):
     def __init__(self, prev_view):
@@ -740,6 +751,7 @@ class OnslaughtPreGameLobby(arcade.View):
         self.button_list.append(LeaveLobbyButton(self, SCREEN_WIDTH*0.95, SCREEN_HEIGHT*0.97, 200, 50, theme=self.theme))
 
         self.player_velocity = 10
+        self.curr_round_number = self.getCurrentRoundNumber()
 
         self.setup()
 
@@ -847,6 +859,9 @@ class OnslaughtPreGameLobby(arcade.View):
         self.hp_percent = self.current_health / self.max_health
         arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.hp_percent))/2), self.player.top+10, 69.7*self.hp_percent, 9.7, arcade.color.RED)
 
+        # Display current round
+        arcade.draw_text("Current Round: {}".format(self.curr_round_number), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.96, arcade.color.WHITE, 30, bold=True, anchor_x="center")
+
         for button in self.button_list:
             button.draw()
 
@@ -885,6 +900,17 @@ class OnslaughtPreGameLobby(arcade.View):
             or key == arcade.key.RIGHT
         ):
             self.player.change_x = 0
+
+    def getCurrentRoundNumber(self):
+        global CURRENT_CHAR
+        c = db.conn.cursor()
+        try:
+            char_id = c.execute("""SELECT char_id FROM characters WHERE char_name = ?""", (CURRENT_CHAR,)).fetchall()
+            round_num = c.execute("""SELECT curr_round_number FROM game_stats WHERE char_id = ?""", (str(char_id[0][0]),)).fetchall()
+        except Error as e:
+            print(e)
+            exit()
+        return round_num[0][0]
 
 class Onslaught(arcade.View):
     def __init__(self):
