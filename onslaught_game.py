@@ -251,6 +251,7 @@ class CharacterButton(TextButton):
         self.y = y
         self.width = width
         self.height = height
+        self.char_name = char_name
         self.text = "Character: {}\nClass: {}\nLevel: {}".format(char_name, char_class, char_level)
 
     def on_press(self):
@@ -696,7 +697,7 @@ class Onslaught(arcade.View):
         self.spell_slot_list = arcade.SpriteList()
         self.all_sprites = arcade.SpriteList()
 
-        self.player_velocity = 15
+        self.player_velocity = 10
 
         # FOR TESTING - set to "True" to not lose when hit by enemy.  Otherwise, KEEP "False"
         self.GOD_MODE = True
@@ -706,10 +707,14 @@ class Onslaught(arcade.View):
         arcade.set_background_color(arcade.color.GRAY)
 
         # Set up the player
-        self.player = arcade.Sprite("images/adventurer_stand.png", 1.0)
+        self.player = Character("images/adventurer_stand.png", 1.0)
+        self.player.setup()
         self.player.center_y = SCREEN_HEIGHT/2
-        self.player.left = SCREEN_WIDTH/2
+        self.player.center_x = SCREEN_WIDTH/2
         self.all_sprites.append(self.player)
+
+        # Set up for health bar
+        self.health = self.player.getHealth()
 
         # Draw spell bar UI sprites, then add spell images inside them
         centers = [SCREEN_WIDTH*0.425, SCREEN_WIDTH*0.475, SCREEN_WIDTH*0.525, SCREEN_WIDTH*0.575, SCREEN_WIDTH*0.675]
@@ -737,6 +742,9 @@ class Onslaught(arcade.View):
         #if arcade.paused:
         #    return
 
+        # Keep updating the player's current health
+        self.health = self.player.getHealth()
+
         # Did you hit an enemy?
         if self.player.collides_with_list(self.enemies_list):
             if not self.GOD_MODE:
@@ -756,10 +764,16 @@ class Onslaught(arcade.View):
             self.player.left = 0
 
     def on_draw(self):
+        global CURRENT_CHAR
         # Begin rendering (will end automatically after method ends)
         arcade.start_render()
 
         arcade.draw_text("Trinket", SCREEN_WIDTH*0.6625, SCREEN_HEIGHT*0.025, arcade.color.BLACK, 16, bold=True)
+
+        # Draw player name and health bar
+        arcade.draw_text(CURRENT_CHAR, self.player.center_x, self.player.top+15, arcade.color.WHITE, 16, bold=True, anchor_x="center")
+        arcade.draw_rectangle_outline(self.player.center_x, self.player.top+10, 70, 10, arcade.color.BLACK)
+        arcade.draw_rectangle_filled(self.player.center_x, self.player.top+10, 69.7, 9.7, arcade.color.RED)
 
         # Draw scoreboard text
         # self.score_text = arcade.draw_text("SCORE: {}".format(str(self.score)), SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
@@ -855,9 +869,9 @@ class Bullet(arcade.Sprite):
             self.remove_from_sprite_lists()
 
 class Character(arcade.Sprite):
-    def __init__(self, char_id):
-        super().init()
-        self.char_id = char_id
+    def setup(self):
+        self.player_stats = self.getCharStats()
+        self.player_health = self.player_stats[0][6]
 
     def update(self):
         super().update()
@@ -865,16 +879,28 @@ class Character(arcade.Sprite):
     def castSpell(self, spell):
         pass
 
+    def getHealth(self):
+        return self.player_health
+
+    def getCharStats(self):
+        global CURRENT_CHAR
+        c = db.conn.cursor()
+        try:
+            char_stats = c.execute("""SELECT * FROM characters WHERE char_name = ?""", (CURRENT_CHAR,)).fetchall()
+            #stats = [stat[0] for stat in char_stats]
+        except Error as e:
+            print(e)
+            exit()
+        return char_stats
+
 class LoginWindow(Frame):
     def __init__(self, master=None): 
-        global root_master
         Frame.__init__(self, master)
 
         self.master.protocol("WM_DELETE_WINDOW", self.client_exit)
                 
         self.master = master
         self.master.geometry("600x400")
-        root_master = self.master
 
         self.game = None
 
