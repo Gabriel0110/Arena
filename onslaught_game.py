@@ -94,12 +94,11 @@ class BackButton(TextButton):
 class SinglePlayerButton(TextButton):
     def __init__(self, view, x=0, y=0, width=300, height=40, text="Single-Player Onslaught", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
-        #self.game = game
+        self.view = view
 
     def on_press(self):
         global game
-        pregame_lobby_view = OnslaughtPreGameLobby()
-        pregame_lobby_view.setup()
+        pregame_lobby_view = OnslaughtPreGameLobby(self.view)
         game.show_view(pregame_lobby_view)
 
 class ArenaButton(TextButton):
@@ -142,22 +141,51 @@ class ContinueButton(TextButton):
         game_view = self.view
         game.show_view(game_view)
 
-class MainMenuButton(TextButton):
-    def __init__(self, view, x=0, y=0, width=120, height=40, text="Leave Lobby", theme=None):
+class LeaveLobbyButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=150, height=40, text="Leave Lobby", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
         global game
         self.view = view
-        self.text = "Leave Lobby" if "OnslaughtPreGameLobby" in str(game.current_view) else "Quit Round"
+        self.text = "Leave Lobby"
 
     def on_press(self):
         global game
-        if "OnslaughtPreGameLobby" in str(game.current_view):
+        # Go back to options screen
+        char_select = CharacterSelect()
+        options_view = AfterCharacterSelect(char_select)
+        game.show_view(options_view)
+
+class ReturnToLobbyButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=150, height=40, text="Quit Round", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+        global game
+        self.view = view
+        self.text = "Quit Round"
+
+    def on_press(self):
+        global game
+        # Leave current round and go back to pre-game lobby
+        char_select = CharacterSelect()
+        options_view = AfterCharacterSelect(char_select)
+        pregame_lobby_view = OnslaughtPreGameLobby(options_view)
+        game.show_view(pregame_lobby_view)
+
+class MainMenuButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=150, height=40, text="Leave Lobby", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+        global game
+        self.view = view
+        self.text = "Leave Lobby" if "PreGameLobby" in str(game.current_view) else "Quit Round"
+
+    def on_press(self):
+        global game
+        if "PreGameLobby" in str(game.current_view):
             # Go back to options screen
-            options_view = AfterCharacterSelect()
+            options_view = AfterCharacterSelect(CharacterSelect())
             game.show_view(options_view)
-        elif "Onslaught" in str(game.current_view) and "PreGameLobby" not in str(game.current_view):
+        elif "PreGameLobby" not in str(game.current_view):
             # Leave current round and go back to pre-game lobby
-            pregame_lobby_view = OnslaughtPreGameLobby()
+            pregame_lobby_view = OnslaughtPreGameLobby(AfterCharacterSelect(CharacterSelect()))
             game.show_view(pregame_lobby_view)
 
 class CreateButton(TextButton):
@@ -165,7 +193,7 @@ class CreateButton(TextButton):
         super().__init__(x, y, width, height, text, theme=theme)
 
     def on_press(self):
-        global game, total_characters, max_characters, char_creation_root, createButtonPressed
+        global game, total_characters, max_characters, createButtonPressed
         if total_characters < max_characters:
             game.show_view(CharacterCreationView())
             createButtonPressed = False
@@ -595,8 +623,12 @@ class PauseMenu(arcade.View):
         self.game_view = game_view
 
         self.theme = getButtonThemes()
-        self.button_list.append(ContinueButton(self.game_view, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 175, 50, theme=self.theme))
-        self.button_list.append(MainMenuButton(self.game_view, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 175, 50, theme=self.theme))
+        self.button_list.append(ContinueButton(self.game_view, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.15, 200, 50, theme=self.theme))
+
+        if "PreGame" in str(self.game_view):
+            self.button_list.append(LeaveLobbyButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 200, 50, theme=self.theme))
+        elif "Onslaught" in str(self.game_view) and "PreGame" not in str(self.game_view):
+            self.button_list.append(ReturnToLobbyButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.15, 200, 50, theme=self.theme))
 
     def on_show(self):
         arcade.set_background_color(arcade.color.ORANGE)
@@ -611,7 +643,7 @@ class PauseMenu(arcade.View):
                                           bottom=SCREEN_HEIGHT*0,
                                           color=arcade.color.ORANGE + (200,))
 
-        arcade.draw_text("PAUSED", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.6, arcade.color.BLACK, font_size=30, anchor_x="center")
+        arcade.draw_text("PAUSED", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.6, arcade.color.BLACK, font_size=40, anchor_x="center")
 
         # Show tip to return or reset
         arcade.draw_text("Press 'Continue' to return to the game.",
@@ -620,12 +652,12 @@ class PauseMenu(arcade.View):
                          arcade.color.BLACK,
                          font_size=20,
                          anchor_x="center")
-        arcade.draw_text("Press 'Main Menu' to exit to the main menu.",
-                         SCREEN_WIDTH/2,
-                         SCREEN_HEIGHT/2-30,
-                         arcade.color.BLACK,
-                         font_size=20,
-                         anchor_x="center")
+        # arcade.draw_text("Press 'Main Menu' to exit to the main menu.",
+        #                  SCREEN_WIDTH/2,
+        #                  SCREEN_HEIGHT/2-30,
+        #                  arcade.color.BLACK,
+        #                  font_size=20,
+        #                  anchor_x="center")
 
         for button in self.button_list:
             button.draw()
@@ -696,14 +728,20 @@ class PvpArena(arcade.View):
         self.all_sprites.draw()
 
 class OnslaughtPreGameLobby(arcade.View):
-    def __init__(self):
+    def __init__(self, view):
         super().__init__()
+        self.view = view
 
         # Set up the empty sprite lists
         self.spell_slot_list = arcade.SpriteList()
         self.all_sprites = arcade.SpriteList()
 
+        self.theme = getButtonThemes()
+        self.button_list.append(LeaveLobbyButton(self, SCREEN_WIDTH*0.95, SCREEN_HEIGHT*0.97, 200, 50, theme=self.theme))
+
         self.player_velocity = 10
+
+        self.setup()
 
         # FOR TESTING - set to "True" to not lose when hit by enemy.  Otherwise, KEEP "False"
         self.GOD_MODE = True
@@ -808,6 +846,9 @@ class OnslaughtPreGameLobby(arcade.View):
         arcade.draw_rectangle_outline(self.player.center_x, self.player.top+10, 70, 10, arcade.color.BLACK)
         self.hp_percent = self.current_health / self.max_health
         arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.hp_percent))/2), self.player.top+10, 69.7*self.hp_percent, 9.7, arcade.color.RED)
+
+        for button in self.button_list:
+            button.draw()
 
         self.all_sprites.draw()
 
