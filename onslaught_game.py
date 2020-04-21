@@ -112,6 +112,26 @@ class ArenaButton(TextButton):
         pvp_arena_view = PvpArena()
         game.show_view(pvp_arena_view)
 
+class StatsAndInventoryButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=175, height=40, text="Stats & Inventory", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+        self.view = view
+
+    def on_press(self):
+        global game
+        stats_and_inv = StatsAndInventory(self.view)
+        game.show_view(stats_and_inv)
+
+class TalentsAndSpellsButton(TextButton):
+    def __init__(self, view, x=0, y=0, width=175, height=40, text="Talents & Spells", theme=None):
+        super().__init__(x, y, width, height, text, theme=theme)
+        self.view = view
+
+    def on_press(self):
+        global game
+        talents_and_spells = TalentsAndSpells(self.view)
+        game.show_view(talents_and_spells)
+
 class ContinueButton(TextButton):
     def __init__(self, view, x=0, y=0, width=120, height=40, text="Continue", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
@@ -154,8 +174,8 @@ class ChooseButton(TextButton):
         global game, characterSelected, attemptedPlay
         attemptedPlay = True
         if characterSelected:
-            mode_view = ModeSelect(self.view)
-            game.show_view(mode_view)
+            after_char_select_view = AfterCharacterSelect(self.view)
+            game.show_view(after_char_select_view)
             attemptedPlay = False
             characterSelected = False
         else:
@@ -522,15 +542,49 @@ class CharacterCreationView(arcade.View):
             exit()
         return ids
 
-class ModeSelect(arcade.View):
+class TalentsAndSpells(arcade.View):
     def __init__(self, prev_view):
         super().__init__()
         self.prev_view = prev_view
 
         self.theme = getButtonThemes()
-        self.button_list.append(SinglePlayerButton(self, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.6, 400, 50, theme=self.theme))
-        self.button_list.append(ArenaButton(self, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.4, 250, 50, theme=self.theme))
-        self.button_list.append(BackButton(self.prev_view, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.2, 100, 50, theme=self.theme))
+        self.button_list.append(BackButton(self.prev_view, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.1, 100, 50, theme=self.theme))
+
+    def on_show(self):
+        arcade.set_background_color(arcade.color.GRAY)
+
+    def on_draw(self):
+        arcade.start_render()
+        for button in self.button_list:
+            button.draw()
+
+class StatsAndInventory(arcade.View):
+    def __init__(self, prev_view):
+        super().__init__()
+        self.prev_view = prev_view
+
+        self.theme = getButtonThemes()
+        self.button_list.append(BackButton(self.prev_view, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.1, 100, 50, theme=self.theme))
+
+    def on_show(self):
+        arcade.set_background_color(arcade.color.GRAY)
+
+    def on_draw(self):
+        arcade.start_render()
+        for button in self.button_list:
+            button.draw()
+
+class AfterCharacterSelect(arcade.View):
+    def __init__(self, prev_view):
+        super().__init__()
+        self.prev_view = prev_view
+
+        self.theme = getButtonThemes()
+        self.button_list.append(SinglePlayerButton(self, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.6, 425, 50, theme=self.theme))
+        self.button_list.append(ArenaButton(self, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.5, 425, 50, theme=self.theme))
+        self.button_list.append(StatsAndInventoryButton(self, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.4, 425, 50, theme=self.theme))
+        self.button_list.append(TalentsAndSpellsButton(self, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.3, 425, 50, theme=self.theme))
+        self.button_list.append(BackButton(self.prev_view, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.1, 100, 50, theme=self.theme))
 
     def on_show(self):
         arcade.set_background_color(arcade.color.GRAY)
