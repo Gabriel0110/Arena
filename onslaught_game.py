@@ -274,7 +274,7 @@ class DeleteButton(TextButton):
         CURRENT_CHAR = self.char_name
 
 
-#######################################################################################################################
+##############################################################################################################################
 
 
 class MainMenu(arcade.View):
@@ -483,38 +483,21 @@ class CharacterCreationView(arcade.View):
 
         # Set all starter stats based on the class chosen (INCLUDING WHICH TEXTURE WILL BE USED)
         # STAT VALUES ARE ARBITRARY RIGHT NOW -- just putting something there to satisfy
-        if self.char_class in ["Ninja", "Warrior"]:
-            char_texture = "images/player_stand.png" if char_class == "Ninja" else "images/player_stand.png"
-            char_level = 1
-            char_stamina = 9
-            char_strength = 5
-            char_intellect = 5
-            char_agility = 5
-            char_attack_crit_chance = char_agility * game_settings.AGILITY_CRIT_MULTIPLIER
-            char_spell_crit_chance = char_intellect * game_settings.INTELLECT_CRIT_MULTIPLIER
-            char_spell_power = char_intellect * game_settings.INTELLECT_SP_MULTIPLIER
-            char_attack_power = char_agility * game_settings.AGILITY_AP_MULTIPLIER + char_strength * game_settings.STRENGTH_AP_MULTIPLIER
-            char_move_speed = 10
-            char_health = char_stamina * game_settings.STAMINA_HEALTH_MULTIPLIER
-            char_mana = char_intellect * game_settings.INTELLECT_MANA_MULTIPLIER
-            curr_exp = 0
-            curr_pvp_rank = 0
-        elif self.char_class in ["Mage", "Necromancer"]:
-            char_texture = "images/adventurer_stand.png" if char_class == "Mage" else "images/adventurer_stand.png"
-            char_level = 1
-            char_stamina = 9
-            char_strength = 5
-            char_intellect = 5
-            char_agility = 5
-            char_attack_crit_chance = char_agility * game_settings.AGILITY_CRIT_MULTIPLIER
-            char_spell_crit_chance = char_intellect * game_settings.INTELLECT_CRIT_MULTIPLIER
-            char_spell_power = char_intellect * game_settings.INTELLECT_SP_MULTIPLIER
-            char_attack_power = char_agility * game_settings.AGILITY_AP_MULTIPLIER + char_strength * game_settings.STRENGTH_AP_MULTIPLIER
-            char_move_speed = 10
-            char_health = char_stamina * game_settings.STAMINA_HEALTH_MULTIPLIER
-            char_mana = char_intellect * game_settings.INTELLECT_MANA_MULTIPLIER
-            curr_exp = 0
-            curr_pvp_rank = 0
+        char_texture = "images/player_stand.png" if char_class == "Ninja" or char_class == "Warrior" else "images/adventurer_stand.png"
+        char_level = 1
+        char_stamina = 9
+        char_strength = 5
+        char_intellect = 5
+        char_agility = 5
+        char_attack_crit_chance = char_agility * game_settings.AGILITY_CRIT_MULTIPLIER
+        char_spell_crit_chance = char_intellect * game_settings.INTELLECT_CRIT_MULTIPLIER
+        char_spell_power = char_intellect * game_settings.INTELLECT_SP_MULTIPLIER
+        char_attack_power = char_agility * game_settings.AGILITY_AP_MULTIPLIER + char_strength * game_settings.STRENGTH_AP_MULTIPLIER
+        char_move_speed = 10
+        char_health = char_stamina * game_settings.STAMINA_HEALTH_MULTIPLIER
+        char_mana = char_intellect * game_settings.INTELLECT_MANA_MULTIPLIER
+        curr_exp = 0
+        curr_pvp_rank = 0
 
         # Insert char_id (should be CURRENT_ACCT_ID -- a global variable), acct_id, char_name, char_texture, char_class and ALL of the starter stats created above into the characters DB
         insertions = {}
