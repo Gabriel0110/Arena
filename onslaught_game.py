@@ -98,9 +98,9 @@ class SinglePlayerButton(TextButton):
 
     def on_press(self):
         global game
-        onslaught_view = Onslaught()
-        onslaught_view.setup()
-        game.show_view(onslaught_view)
+        pregame_lobby_view = OnslaughtPreGameLobby()
+        pregame_lobby_view.setup()
+        game.show_view(pregame_lobby_view)
 
 class ArenaButton(TextButton):
     def __init__(self, view, x=0, y=0, width=175, height=40, text="1v1 PvP Arena", theme=None):
@@ -143,13 +143,22 @@ class ContinueButton(TextButton):
         game.show_view(game_view)
 
 class MainMenuButton(TextButton):
-    def __init__(self, view, x=0, y=0, width=120, height=40, text="Main Menu", theme=None):
+    def __init__(self, view, x=0, y=0, width=120, height=40, text="Leave Lobby", theme=None):
         super().__init__(x, y, width, height, text, theme=theme)
+        global game
+        self.view = view
+        self.text = "Leave Lobby" if "OnslaughtPreGameLobby" in str(game.current_view) else "Quit Round"
 
     def on_press(self):
         global game
-        main_menu = MainMenu()
-        game.show_view(main_menu)
+        if "OnslaughtPreGameLobby" in str(game.current_view):
+            # Go back to options screen
+            options_view = AfterCharacterSelect()
+            game.show_view(options_view)
+        elif "Onslaught" in str(game.current_view) and "PreGameLobby" not in str(game.current_view):
+            # Leave current round and go back to pre-game lobby
+            pregame_lobby_view = OnslaughtPreGameLobby()
+            game.show_view(pregame_lobby_view)
 
 class CreateButton(TextButton):
     def __init__(self, view, x=0, y=0, width=100, height=40, text="Create", theme=None):
@@ -686,6 +695,155 @@ class PvpArena(arcade.View):
 
         self.all_sprites.draw()
 
+class OnslaughtPreGameLobby(arcade.View):
+    def __init__(self):
+        super().__init__()
+
+        # Set up the empty sprite lists
+        self.spell_slot_list = arcade.SpriteList()
+        self.all_sprites = arcade.SpriteList()
+
+        self.player_velocity = 10
+
+        # FOR TESTING - set to "True" to not lose when hit by enemy.  Otherwise, KEEP "False"
+        self.GOD_MODE = True
+
+    def setup(self):
+        # Set the background color
+        arcade.set_background_color(arcade.color.GRAY)
+
+        # Set up the player
+        self.player = Character("images/adventurer_stand.png", 1.0)
+        self.player.setup()
+        self.player.center_y = SCREEN_HEIGHT/2
+        self.player.center_x = SCREEN_WIDTH/2
+        self.all_sprites.append(self.player)
+
+        # Set up for health bar
+        self.max_health = self.player.getMaxHealth()
+        self.current_health = self.player.getCurrentHealth()
+
+        # Draw spell bar UI sprites, then add spell images inside them
+        centers = [SCREEN_WIDTH*0.425, SCREEN_WIDTH*0.475, SCREEN_WIDTH*0.525, SCREEN_WIDTH*0.575, SCREEN_WIDTH*0.675]
+        for i in range(5):
+            if i == 4:
+                spell_slot = arcade.Sprite("images/spell_slot.png", 1.0)
+                spell_slot.bottom = SCREEN_HEIGHT*0.05
+                spell_slot.center_x = centers[i]
+            else:
+                spell_slot = arcade.Sprite("images/spell_slot.png", 1.0)
+                spell_slot.bottom = SCREEN_HEIGHT*0.05
+                spell_slot.center_x = centers[i]
+            self.spell_slot_list.append(spell_slot)
+            self.all_sprites.append(spell_slot)
+
+        # Draw lobby art and append to all_sprites list
+        self.entrance = arcade.Sprite("images/entrance.png", 7.0)
+        self.entrance.right = SCREEN_WIDTH
+        self.entrance.center_y = SCREEN_HEIGHT/2
+        self.entrance.angle = 270
+
+        self.wall_piece1 = arcade.Sprite("images/corner.png", 7.0)
+        self.wall_piece1.bottom = self.entrance.top
+        self.wall_piece1.right = SCREEN_WIDTH
+        self.wall_piece2 = arcade.Sprite("images/corner_inverted.png", 7.0)
+        self.wall_piece2.top = self.entrance.bottom
+        self.wall_piece2.right = SCREEN_WIDTH
+
+        self.all_sprites.append(self.entrance)
+        self.all_sprites.append(self.wall_piece1)
+        self.all_sprites.append(self.wall_piece2)
+
+        # Spawn a new enemy every 0.5 seconds
+        #arcade.schedule(self.add_enemy, 0.5)
+
+    def on_show(self):
+        # Set the background color
+        arcade.set_background_color(arcade.color.GRAY)
+
+    def on_update(self, delta_time: float):
+        global game
+        # If paused, don't update anything
+        #if arcade.paused:
+        #    return
+
+        # Keep updating the player's current health
+        self.current_health = self.player.getCurrentHealth()
+
+        # Did the player step into the 
+        if self.player.collides_with_sprite(self.entrance):
+            # PROMPT TO ASK IF YOU WANT TO BEGIN ONSLAUGHT ROUND (can use pyautogui, but look into arcade gui prompt? there is an example)
+            ans = pyautogui.confirm("Do you wish to begin the next Onslaught round?", "Start next round?", buttons=["Let's do it", "Cancel"])
+            if ans == "Let's do it":
+                onslaught = Onslaught()
+                onslaught.setup()
+                game.show_view(onslaught)
+            else:
+                # Move character out of entrance
+                self.player.center_x = self.entrance.center_x - 200
+
+        # Update everything
+        self.all_sprites.update()
+
+        # Keep the player on screen
+        if self.player.top > SCREEN_HEIGHT:
+            self.player.top = SCREEN_HEIGHT
+        elif self.player.right > SCREEN_WIDTH:
+            self.player.right = SCREEN_WIDTH
+        elif self.player.bottom < 0:
+            self.player.bottom = 0
+        elif self.player.left < 0:
+            self.player.left = 0
+
+    def on_draw(self):
+        global CURRENT_CHAR
+        # Begin rendering (will end automatically after method ends)
+        arcade.start_render()
+
+        arcade.draw_text("Trinket", SCREEN_WIDTH*0.6625, SCREEN_HEIGHT*0.025, arcade.color.BLACK, 16, bold=True)
+        arcade.draw_text("Begin Round", self.entrance.left - 30, SCREEN_HEIGHT/2 - 50, arcade.color.BLACK, 16, bold=True, rotation=270.0, anchor_x="center")
+
+        # Draw player name and health bar
+        arcade.draw_text(CURRENT_CHAR, self.player.center_x, self.player.top+15, arcade.color.WHITE, 16, bold=True, anchor_x="center")
+        arcade.draw_rectangle_outline(self.player.center_x, self.player.top+10, 70, 10, arcade.color.BLACK)
+        self.hp_percent = self.current_health / self.max_health
+        arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.hp_percent))/2), self.player.top+10, 69.7*self.hp_percent, 9.7, arcade.color.RED)
+
+        self.all_sprites.draw()
+
+    def on_key_press(self, key, modifiers):
+        global game
+
+        # SIMILAR TO PAUSE MENU, BUT OPTION TO GO BACK TO OPTIONS SELECTION
+        if key == arcade.key.ESCAPE:
+           pause_menu = PauseMenu(self)
+           game.show_view(pause_menu)
+
+        if key == arcade.key.A or key == arcade.key.LEFT:
+            self.player.change_x = -self.player_velocity
+        elif key == arcade.key.D or key == arcade.key.RIGHT:
+            self.player.change_x = self.player_velocity
+        elif key == arcade.key.W or key == arcade.key.UP:
+            self.player.change_y = self.player_velocity
+        elif key == arcade.key.S or key == arcade.key.DOWN:
+            self.player.change_y = -self.player_velocity
+
+    def on_key_release(self, key: int, modifiers: int):
+        if (
+            key == arcade.key.W
+            or key == arcade.key.S
+            or key == arcade.key.UP
+            or key == arcade.key.DOWN
+        ):
+            self.player.change_y = 0
+
+        if (
+            key == arcade.key.A
+            or key == arcade.key.D
+            or key == arcade.key.LEFT
+            or key == arcade.key.RIGHT
+        ):
+            self.player.change_x = 0
 
 class Onslaught(arcade.View):
     def __init__(self):
