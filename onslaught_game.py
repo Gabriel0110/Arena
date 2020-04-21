@@ -714,7 +714,8 @@ class Onslaught(arcade.View):
         self.all_sprites.append(self.player)
 
         # Set up for health bar
-        self.health = self.player.getHealth()
+        self.max_health = self.player.getMaxHealth()
+        self.current_health = self.player.getCurrentHealth()
 
         # Draw spell bar UI sprites, then add spell images inside them
         centers = [SCREEN_WIDTH*0.425, SCREEN_WIDTH*0.475, SCREEN_WIDTH*0.525, SCREEN_WIDTH*0.575, SCREEN_WIDTH*0.675]
@@ -743,7 +744,7 @@ class Onslaught(arcade.View):
         #    return
 
         # Keep updating the player's current health
-        self.health = self.player.getHealth()
+        self.current_health = self.player.getCurrentHealth()
 
         # Did you hit an enemy?
         if self.player.collides_with_list(self.enemies_list):
@@ -773,7 +774,8 @@ class Onslaught(arcade.View):
         # Draw player name and health bar
         arcade.draw_text(CURRENT_CHAR, self.player.center_x, self.player.top+15, arcade.color.WHITE, 16, bold=True, anchor_x="center")
         arcade.draw_rectangle_outline(self.player.center_x, self.player.top+10, 70, 10, arcade.color.BLACK)
-        arcade.draw_rectangle_filled(self.player.center_x, self.player.top+10, 69.7, 9.7, arcade.color.RED)
+        self.hp_percent = self.current_health / self.max_health
+        arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.hp_percent))/2), self.player.top+10, 69.7*self.hp_percent, 9.7, arcade.color.RED)
 
         # Draw scoreboard text
         # self.score_text = arcade.draw_text("SCORE: {}".format(str(self.score)), SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
@@ -871,7 +873,8 @@ class Bullet(arcade.Sprite):
 class Character(arcade.Sprite):
     def setup(self):
         self.player_stats = self.getCharStats()
-        self.player_health = self.player_stats[0][6]
+        self.player_max_health = self.player_stats[0][6]
+        self.player_current_health = self.player_max_health # start current health at the max health
 
     def update(self):
         super().update()
@@ -879,8 +882,11 @@ class Character(arcade.Sprite):
     def castSpell(self, spell):
         pass
 
-    def getHealth(self):
-        return self.player_health
+    def getMaxHealth(self):
+        return self.player_max_health
+
+    def getCurrentHealth(self):
+        return self.player_current_health
 
     def getCharStats(self):
         global CURRENT_CHAR
