@@ -785,7 +785,7 @@ class OnslaughtPreGameLobby(arcade.View):
         arcade.set_background_color(arcade.color.GRAY)
 
         # Set up the player
-        self.player = Character("images/adventurer_stand.png", 1.0)
+        self.player = Character("images/adventurer_stand.png", 0.8)
         self.player.setup()
         self.player.center_y = SCREEN_HEIGHT/2
         self.player.center_x = SCREEN_WIDTH/2
@@ -952,13 +952,14 @@ class Onslaught(arcade.View):
         self.player = player
         self.char_class = self.getCharClass()
         self.basic_attack_img = self.getBasicAttackImage()
-        self.sword = WeaponSprite("images/sword.png", 0.5)
+        self.sword = WeaponSprite("images/sword.png", 0.4)
         self.swingingWeapon = False
         self.quadrant = ""
         self.swing_timer = 0
 
         self.enemyHit = False
         self.deleteAttack = False
+        self.playerCanBeHit = True
 
         self.player_velocity = 10
 
@@ -1029,15 +1030,19 @@ class Onslaught(arcade.View):
                 self.sword.center_x = self.player.center_x + 30
                 self.sword.center_y = self.player.center_y - 30
 
-        # Did you hit an enemy?
+        # Did you hit an enemy? --- NEED TO MAKE IT WHERE PLAYER CAN ONLY TAKE DAMAGE ONCE EVERY SECOND TO NOT GET OBLITERATED
         if self.player.collides_with_list(self.enemies_list):
-            self.player.takeDamage(self.player.getMaxHealth()*0.1)
+            if self.playerCanBeHit:
+                self.player.takeDamage(self.player.getMaxHealth()*0.1)
+                self.playerCanBeHit = False
+                arcade.schedule(self.setPlayerHit, 1.0)
 
         # Did you die?
         if self.current_health <= 0:
             # YOU DIED
             # Freeze screen and pop up something saying you died, or take to summary screen, or take to summary screen AFTER popup message, etc
             game.show_view(OnslaughtPreGameLobby(AfterCharacterSelect(CharacterSelect())))
+            self.player.player_current_health = self.player.getMaxHealth()
 
         # Update everything
         self.all_sprites.update()
@@ -1076,12 +1081,16 @@ class Onslaught(arcade.View):
 
         self.all_sprites.draw()
 
+    def setPlayerHit(self, delta_time: float):
+        self.playerCanBeHit = True
+        arcade.unschedule(self.setPlayerHit)
+
     def add_enemy(self, delta_time: float):
         #if arcade.paused:
         #    return
 
         # First, create the new enemy sprite
-        enemy = EnemySprite("images/enemy_sprite.png", 1.0)
+        enemy = EnemySprite("images/enemy_sprite.png", 0.8)
         enemy.setup(50)
 
         # Set its position to a random x position and off-screen at the top
