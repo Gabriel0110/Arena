@@ -1129,6 +1129,7 @@ class Onslaught(arcade.View):
             if self.swingingWeapon == False:
                 self.swing_timer = 0
                 self.swingingWeapon = True
+                self.enemyHit = False
 
                 # Position the bullet at the player's current location
                 start_x = self.player.center_x
@@ -1227,6 +1228,7 @@ class Onslaught(arcade.View):
             return ["images/caster_bolt.png", 0.8]
 
     def swingWeapon(self, _delta_time):
+        global onslaught
         RADIANS_PER_FRAME = 1.8
         arcade.start_render()
 
@@ -1234,8 +1236,11 @@ class Onslaught(arcade.View):
 
         self.swing_timer += 1/80
         if self.swing_timer >= 20/80:
+            self.sword.center_x = SCREEN_WIDTH + 200
             self.sword.remove_from_sprite_lists()
+            self.sword.kill()
             self.swingingWeapon = False
+            arcade.unschedule(self.swingWeapon)
             return
 
 class EnemySprite(arcade.Sprite):
@@ -1249,8 +1254,8 @@ class EnemySprite(arcade.Sprite):
                     onslaught.enemyHit = True
                     print("ENEMY HIT BY MELEE BASIC ATTACK - DECREMENTING HEALTH BY 10")
                     self.enemy_health -= 10
-            else:
-                onslaught.enemyHit = False
+            #else:
+                #onslaught.enemyHit = False
         elif onslaught.char_class == "Mage":
             if self.collides_with_list(onslaught.basic_attack_list):
                 if onslaught.enemyHit == False:
@@ -1288,8 +1293,8 @@ class WeaponSprite(arcade.Sprite):
         if onslaught.swingingWeapon == False:
             self.remove_from_sprite_lists()
 
-        if self.collides_with_list(onslaught.enemies_list):
-            print("ENEMY HIT BY BASIC ATTACK")
+        #if self.collides_with_list(onslaught.enemies_list):
+            #self.remove_from_sprite_lists()
 
 class Character(arcade.Sprite):
     def setup(self):
