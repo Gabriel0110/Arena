@@ -16,6 +16,7 @@ SCREEN_HEIGHT = round(pyautogui.size()[1]*0.8)
 SCREEN_TITLE = "Onslaught"
 
 game = None # HOLDS THE ACTIVE VIEW AND USED TO CHANGE VIEWS
+onslaught = None # hold Onslaught() creation to call to
 
 characterSelected = False
 char_selected_bttn_loc = []
@@ -34,6 +35,8 @@ all_char_ids = []
 CURRENT_USERNAME = ""
 CURRENT_ACCT_ID = None
 CURRENT_CHAR = None
+
+player = None # holds the single player character sprite when created
 
 class GameSettings():
     def __init__(self):
@@ -267,16 +270,16 @@ class NameButton(TextButton):
     def on_press(self):
         global char_creation_name
         char_creation_name = pyautogui.prompt("What will your character's name be?\n   - Only letters are allowed\n   - Max length is 10 letters")
-        for c in char_creation_name:
-            if not c.isalpha():
-                createAlert("Only letters are allowed for naming. Please try a different name.", "Error", "OK")
+        if char_creation_name:
+            for c in char_creation_name:
+                if not c.isalpha():
+                    createAlert("Only letters are allowed for naming. Please try a different name.", "Error", "OK")
+                    char_creation_name = ""
+                    break
+            if len(char_creation_name) > 10:
+                createAlert("That name is too long. The max length for a name is 10.", "Error", "OK")
                 char_creation_name = ""
-                break
-        if len(char_creation_name) > 10:
-            createAlert("That name is too long. The max length for a name is 10.", "Error", "OK")
-            char_creation_name = ""
-        
-        if len(char_creation_name) > 0:
+            
             char_creation_name = char_creation_name.title()
 
 #-------------------------------------------  CHARACTER SELECT/DELETE BUTTONS   ---------------------------------------------#
@@ -432,18 +435,22 @@ class CharacterSelect(arcade.View):
 class CharacterCreationView(arcade.View):
     def __init__(self):
         super().__init__()
-        print("CHARACTERCREATIONVIEW ENTERED")
+        global selected_class
+
+        selected_class = ""
 
         self.theme = getButtonThemes()
-        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.7, 220, 50, text="Ninja", theme=self.theme))
-        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.7, 220, 50, text="Warrior", theme=self.theme))
-        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.5, 220, 50, text="Mage", theme=self.theme))
-        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.5, 220, 50, text="Necromancer", theme=self.theme))
+        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.7, 230, 50, text="Assassin", theme=self.theme))
+        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.50, SCREEN_HEIGHT*0.7, 230, 50, text="Warrior", theme=self.theme))
+        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.7, 230, 50, text="Mage", theme=self.theme))
+        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.5, 230, 50, text="Necromancer", theme=self.theme))
+        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.50, SCREEN_HEIGHT*0.5, 230, 50, text="Void Stalker", theme=self.theme))
+        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.5, 230, 50, text="Friar", theme=self.theme))
 
         self.button_list.append(PlayButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.1, 110, 50, text="Create", theme=self.theme))
         self.button_list.append(BackButton(CharacterSelect(), SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.1, 110, 50, text="Back", theme=self.theme))
 
-        self.button_list.append(NameButton(self, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.3, 230, 50, text="Choose Name", theme=self.theme))
+        self.button_list.append(NameButton(self, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.2, 230, 50, text="Choose Name", theme=self.theme))
 
         # self.text_list.append(arcade.TextLabel("Name: ", self.center_x - 225, self.center_y))
         # self.textbox_list.append(arcade.TextBox(self.center_x - 125, self.center_y))
@@ -459,16 +466,29 @@ class CharacterCreationView(arcade.View):
         for button in self.button_list:
             button.draw()
 
+        # Notify of selected class and provide description of the class on the screen
         if selected_class:
             arcade.draw_text("Selected class: {}".format(selected_class), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.025, arcade.color.BLACK, font_size=20, anchor_x="center")
             arcade.draw_rectangle_outline(selected_class_bttn_loc[0], selected_class_bttn_loc[1], selected_class_bttn_loc[2]+20, selected_class_bttn_loc[3]+20, arcade.color.BLACK)
+            if selected_class == "Assassin":
+                arcade.draw_text("The assassin is a nimble, agile class with the ability use the shadows to its advantage, striking foes where they least expect it.", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.3, arcade.color.BLACK, font_size=24, anchor_x="center")
+            elif selected_class == "Warrior":
+                arcade.draw_text("Hack 'n Slash is the name of the game.. er, the class. Use brute force and the might of your blade to slash through your enemies\nand wreak havoc to the land.", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.3, arcade.color.BLACK, font_size=24, anchor_x="center")
+            elif selected_class == "Mage":
+                arcade.draw_text("Whether it be fire or ice, the mage is sure to control the fight, bending the elements to its will.", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.3, arcade.color.BLACK, font_size=24, anchor_x="center")
+            elif selected_class == "Necromancer":
+                arcade.draw_text("The Necromancer is not to be taken lightly... nor its undead minions. Call upon the dead to rise and serve you, attacking anything\nin sight while you drain the souls of your enemies.", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.3, arcade.color.BLACK, font_size=24, anchor_x="center")
+            elif selected_class == "Void Stalker":
+                arcade.draw_text("As the Void Stalker, harness the power of the void and shape it to your will, bringing destruction to enemies near and far... or let it harness you..", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.3, arcade.color.BLACK, font_size=24, anchor_x="center")
+            elif selected_class == "Friar":
+                arcade.draw_text("Don't be fooled by the simple title. The friar is not to be meddled with as it wields holy power to smite its enemies and ensure it's\nthe last one standing at the end of a fight.", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.3, arcade.color.BLACK, font_size=24, anchor_x="center")
 
-        if len(char_creation_name) > 0:
+        if char_creation_name:
             arcade.draw_text("Name: {}".format(char_creation_name), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.1, arcade.color.BLACK, font_size=20, anchor_x="center")
 
     def on_update(self, delta_time: float):
         global createButtonPressed, char_creation_name, selected_class
-        if createButtonPressed and len(char_creation_name) > 0:
+        if createButtonPressed and char_creation_name:
             print("CREATE BUTTON PRESSED -- PROCESSING CREATION...")
             self.processCreation(char_creation_name, selected_class)
             createButtonPressed = False
@@ -521,7 +541,7 @@ class CharacterCreationView(arcade.View):
 
         # Set all starter stats based on the class chosen (INCLUDING WHICH TEXTURE WILL BE USED)
         # STAT VALUES ARE ARBITRARY RIGHT NOW -- just putting something there to satisfy
-        char_texture = "images/player_stand.png" if char_class == "Ninja" or char_class == "Warrior" else "images/adventurer_stand.png"
+        char_texture = "images/adventurer_stand.png" # SHOULD BE DIFFERENT FOR EVERY CLASS
         char_level = 1
         char_stamina = 9
         char_strength = 5
@@ -741,6 +761,7 @@ class PvpArena(arcade.View):
 class OnslaughtPreGameLobby(arcade.View):
     def __init__(self, view):
         super().__init__()
+        global player
         self.view = view
 
         # Set up the empty sprite lists
@@ -759,6 +780,7 @@ class OnslaughtPreGameLobby(arcade.View):
         self.GOD_MODE = True
 
     def setup(self):
+        global player
         # Set the background color
         arcade.set_background_color(arcade.color.GRAY)
 
@@ -768,6 +790,7 @@ class OnslaughtPreGameLobby(arcade.View):
         self.player.center_y = SCREEN_HEIGHT/2
         self.player.center_x = SCREEN_WIDTH/2
         self.all_sprites.append(self.player)
+        player = self.player
 
         # Set up for health bar
         self.max_health = self.player.getMaxHealth()
@@ -804,15 +827,15 @@ class OnslaughtPreGameLobby(arcade.View):
         self.all_sprites.append(self.wall_piece1)
         self.all_sprites.append(self.wall_piece2)
 
-        # Spawn a new enemy every 0.5 seconds
-        #arcade.schedule(self.add_enemy, 0.5)
+        # Spawn a new enemy every 2 seconds
+        #arcade.schedule(self.add_enemy, 2.0)
 
     def on_show(self):
         # Set the background color
         arcade.set_background_color(arcade.color.GRAY)
 
     def on_update(self, delta_time: float):
-        global game
+        global game, onslaught
         # If paused, don't update anything
         #if arcade.paused:
         #    return
@@ -915,25 +938,43 @@ class OnslaughtPreGameLobby(arcade.View):
 class Onslaught(arcade.View):
     def __init__(self):
         super().__init__()
+        global player
 
         # Set up the empty sprite lists
         self.enemies_list = arcade.SpriteList()
-        self.bullets_list = arcade.SpriteList()
+        self.basic_attack_list = arcade.SpriteList()
+        #self.weapon_list = arcade.SpriteList()
         self.spell_slot_list = arcade.SpriteList()
         self.all_sprites = arcade.SpriteList()
+
+        #self.all_sprites.append(self.weapon_list)
+
+        self.player = player
+        self.char_class = self.getCharClass()
+        self.basic_attack_img = self.getBasicAttackImage()
+        self.sword = WeaponSprite("images/sword.png", 0.5)
+        self.swingingWeapon = False
+        self.quadrant = ""
+        self.swing_timer = 0
+
+        self.enemyHit = False
+        self.deleteAttack = False
 
         self.player_velocity = 10
 
         # FOR TESTING - set to "True" to not lose when hit by enemy.  Otherwise, KEEP "False"
         self.GOD_MODE = True
 
+        # Schedule enemy spawning every 2 seconds
+        arcade.schedule(self.add_enemy, 2.0)
+
     def setup(self):
         # Set the background color
         arcade.set_background_color(arcade.color.GRAY)
 
         # Set up the player
-        self.player = Character("images/adventurer_stand.png", 1.0)
-        self.player.setup()
+        #self.player = Character("images/adventurer_stand.png", 1.0)
+        #self.player.setup()
         self.player.center_y = SCREEN_HEIGHT/2
         self.player.center_x = SCREEN_WIDTH/2
         self.all_sprites.append(self.player)
@@ -964,6 +1005,7 @@ class Onslaught(arcade.View):
         arcade.set_background_color(arcade.color.GRAY)
 
     def on_update(self, delta_time: float):
+        global player
         # If paused, don't update anything
         #if arcade.paused:
         #    return
@@ -971,10 +1013,30 @@ class Onslaught(arcade.View):
         # Keep updating the player's current health
         self.current_health = self.player.getCurrentHealth()
 
+        if self.swingingWeapon is False:
+            arcade.unschedule(self.swingWeapon) 
+        else:
+            if self.quadrant == "top_left":
+                self.sword.center_x = self.player.center_x - 30
+                self.sword.center_y = self.player.center_y + 30
+            elif self.quadrant == "bottom_left":
+                self.sword.center_x = self.player.center_x - 30
+                self.sword.center_y = self.player.center_y - 30
+            elif self.quadrant == "top_right":
+                self.sword.center_x = self.player.center_x + 30
+                self.sword.center_y = self.player.center_y + 30
+            elif self.quadrant == "bottom_right":
+                self.sword.center_x = self.player.center_x + 30
+                self.sword.center_y = self.player.center_y - 30
+
         # Did you hit an enemy?
         if self.player.collides_with_list(self.enemies_list):
             if not self.GOD_MODE:
                 arcade.close_window()
+
+        # for enemy in self.enemies_list:
+        #     if enemy.enemy_health <= 0:
+        #         enemy.remove_from_sprite_lists()
 
         # Update everything
         self.all_sprites.update()
@@ -988,6 +1050,9 @@ class Onslaught(arcade.View):
             self.player.bottom = 0
         elif self.player.left < 0:
             self.player.left = 0
+        
+        # Update global
+        player = self.player
 
     def on_draw(self):
         global CURRENT_CHAR
@@ -1002,14 +1067,6 @@ class Onslaught(arcade.View):
         self.hp_percent = self.current_health / self.max_health
         arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.hp_percent))/2), self.player.top+10, 69.7*self.hp_percent, 9.7, arcade.color.RED)
 
-        # Draw scoreboard text
-        # self.score_text = arcade.draw_text("SCORE: {}".format(str(self.score)), SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
-        # self.level_text = arcade.draw_text("Level: {}".format(str(self.level)), SCREEN_WIDTH - 175, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
-        
-        # Sanity check to let you know that god mode is active when using it
-        #if self.GOD_MODE:
-            #self.godmode_active_text = arcade.draw_text("GOD MODE ACTIVE", SCREEN_WIDTH*0.02, SCREEN_HEIGHT - 35, arcade.color.BLACK, 20)
-
         self.all_sprites.draw()
 
     def add_enemy(self, delta_time: float):
@@ -1017,35 +1074,19 @@ class Onslaught(arcade.View):
         #    return
 
         # First, create the new enemy sprite
-        enemy = EnemySprite("images/enemy_sprite.png", 0.15)
+        enemy = EnemySprite("images/enemy_sprite.png", 1.0)
+        enemy.setup(50)
 
         # Set its position to a random x position and off-screen at the top
         enemy.top = random.randint(SCREEN_HEIGHT, SCREEN_HEIGHT + 80)
         enemy.left = random.randint(10, SCREEN_WIDTH - 10)
 
         # FIX ---- Set it to GO TOWARDS PLAYER
-        enemy.velocity = self.enemy_velocity
+        enemy.velocity = (0, -2)
 
         # Add it to the enemies list and all_sprites list
         self.enemies_list.append(enemy)
         self.all_sprites.append(enemy)
-
-    def add_bullet(self):
-        #if arcade.paused:
-        #    return
-
-        bullet = Bullet("images/enemy_sprite.png", 0.05)
-
-        # Position the bullet
-        bullet.center_y = enemy.center_y
-        bullet.center_x = enemy.center_x
-
-        # Give the bullet a speed
-        bullet.velocity = (0, -8)
-
-        # Add the bullet to the appropriate lists
-        self.bullets_list.append(bullet)
-        self.all_sprites.append(bullet)
 
     def on_key_press(self, key, modifiers):
         global game
@@ -1081,22 +1122,178 @@ class Onslaught(arcade.View):
         ):
             self.player.change_x = 0
 
+    def on_mouse_press(self, x, y, button, modifiers):
+        import math
+
+        if self.char_class == "Assassin":
+            if self.swingingWeapon == False:
+                self.swing_timer = 0
+                self.swingingWeapon = True
+
+                # Position the bullet at the player's current location
+                start_x = self.player.center_x
+                start_y = self.player.center_y
+
+                # Get from the mouse the destination location for the bullet
+                # IMPORTANT! If you have a scrolling screen, you will also need
+                # to add in self.view_bottom and self.view_left.
+                dest_x = x
+                dest_y = y
+
+                # Do math to calculate how to get the bullet to the destination.
+                # Calculation the angle in radians between the start points
+                # and end points. This is the angle the bullet will travel.
+                x_diff = dest_x - start_x
+                y_diff = dest_y - start_y
+                angle = math.atan2(y_diff, x_diff)
+
+                # Angle the bullet sprite so it doesn't look like it is flying
+                # sideways.
+                self.sword.angle = math.degrees(angle)
+                self.sword.turn_left(30)
+
+                if x < self.player.center_x:
+                    if y > self.player.center_y:
+                        self.quadrant = "top_left"
+                        self.sword.center_x = self.player.center_x - 30
+                        self.sword.center_y = self.player.center_y + 30
+                    else:
+                        self.quadrant = "bottom_left"
+                        self.sword.center_x = self.player.center_x - 30
+                        self.sword.center_y = self.player.center_y - 30
+                else:
+                    if y > self.player.center_y:
+                        self.quadrant = "top_right"
+                        self.sword.center_x = self.player.center_x + 30
+                        self.sword.center_y = self.player.center_y + 30
+                    else:
+                        self.quadrant = "bottom_right"
+                        self.sword.center_x = self.player.center_x + 30
+                        self.sword.center_y = self.player.center_y - 30
+
+                self.all_sprites.append(self.sword)
+
+                arcade.schedule(self.swingWeapon, 1/80)
+        elif self.char_class == "Mage" or self.char_class == "Necromancer":
+            basic_attack = BasicAttackSprite(self.basic_attack_img[0], self.basic_attack_img[1])
+            basic_attack_speed = 15
+
+            # Position the bullet at the player's current location
+            start_x = self.player.center_x
+            start_y = self.player.center_y
+            basic_attack.center_x = start_x
+            basic_attack.center_y = start_y
+
+            # Get from the mouse the destination location for the bullet
+            # IMPORTANT! If you have a scrolling screen, you will also need
+            # to add in self.view_bottom and self.view_left.
+            dest_x = x
+            dest_y = y
+
+            # Do math to calculate how to get the bullet to the destination.
+            # Calculation the angle in radians between the start points
+            # and end points. This is the angle the bullet will travel.
+            x_diff = dest_x - start_x
+            y_diff = dest_y - start_y
+            angle = math.atan2(y_diff, x_diff)
+
+            # Angle the bullet sprite so it doesn't look like it is flying
+            # sideways.
+            basic_attack.angle = math.degrees(angle)
+            #print(f"Bullet angle: {basic_attack.angle:.2f}")
+
+            # Taking into account the angle, calculate our change_x
+            # and change_y. Velocity is how fast the bullet travels.
+            basic_attack.change_x = math.cos(angle) * basic_attack_speed
+            basic_attack.change_y = math.sin(angle) * basic_attack_speed
+
+            # Add the bullet to the appropriate lists
+            self.basic_attack_list.append(basic_attack)
+            self.all_sprites.append(basic_attack)
+
+    def getCharClass(self):
+        global CURRENT_CHAR
+        c = db.conn.cursor()
+        try:
+            char_class = c.execute("""SELECT char_class FROM characters WHERE char_name = ?""", (CURRENT_CHAR,)).fetchall()
+        except Error as e:
+            print(e)
+            exit()
+        return char_class[0][0]
+
+    def getBasicAttackImage(self):
+        # RETURNS IMAGE AND ITS SCALE
+        if self.char_class == "Mage":
+            return ["images/caster_bolt.png", 0.8]
+
+    def swingWeapon(self, _delta_time):
+        RADIANS_PER_FRAME = 1.8
+        arcade.start_render()
+
+        self.sword.turn_right(8)
+
+        self.swing_timer += 1/80
+        if self.swing_timer >= 20/80:
+            self.sword.remove_from_sprite_lists()
+            self.swingingWeapon = False
+            return
+
 class EnemySprite(arcade.Sprite):
     def update(self):
         super().update()
+        global onslaught
 
-        if self.dead:
+        if onslaught.char_class == "Assassin" or onslaught.char_class == "Warrior":
+            if self.collides_with_sprite(onslaught.sword):
+                if onslaught.enemyHit == False:
+                    onslaught.enemyHit = True
+                    print("ENEMY HIT BY MELEE BASIC ATTACK - DECREMENTING HEALTH BY 10")
+                    self.enemy_health -= 10
+            else:
+                onslaught.enemyHit = False
+        elif onslaught.char_class == "Mage":
+            if self.collides_with_list(onslaught.basic_attack_list):
+                if onslaught.enemyHit == False:
+                    onslaught.enemyHit = True
+                    onslaught.deleteAttack = True
+                    print("ENEMY HIT BY RANGED BASIC ATTACK - DECREMENTING HEALTH BY 10")
+                    self.enemy_health -= 10
+            else:
+                onslaught.enemyHit = False
+
+        if self.enemy_health <= 0:
             self.remove_from_sprite_lists()
 
-class Bullet(arcade.Sprite):
+    def setup(self, health):
+        self.enemy_health = health
+
+class BasicAttackSprite(arcade.Sprite):
     def update(self):
         super().update()
+        global onslaught
 
-        if self.collides_with_list(app.enemies_list):
+        if self.center_y >= SCREEN_HEIGHT or self.center_x >= SCREEN_WIDTH or self.center_x <= 0 or self.center_y <= 0:
             self.remove_from_sprite_lists()
+
+        if self.collides_with_list(onslaught.enemies_list):
+            if onslaught.deleteAttack:
+                self.remove_from_sprite_lists()
+                onslaught.deleteAttack = False
+
+class WeaponSprite(arcade.Sprite):
+    def update(self):
+        super().update()
+        global onslaught
+
+        if onslaught.swingingWeapon == False:
+            self.remove_from_sprite_lists()
+
+        if self.collides_with_list(onslaught.enemies_list):
+            print("ENEMY HIT BY BASIC ATTACK")
 
 class Character(arcade.Sprite):
     def setup(self):
+        #self.player_class = self.getCharClass()
         self.player_stats = self.getCharStats()
         self.player_max_health = self.player_stats[0][6]
         self.player_current_health = self.player_max_health # start current health at the max health
@@ -1123,6 +1320,15 @@ class Character(arcade.Sprite):
             print(e)
             exit()
         return char_stats
+
+    def getCharClass(self):
+        c = db.conn.cursor()
+        try:
+            char_class = c.execute("""SELECT char_class FROM characters WHERE char_name = ?""", (CURRENT_CHAR,)).fetchall()
+        except Error as e:
+            print(e)
+            exit()
+        return char_class[0][0]
 
 class LoginWindow(Frame):
     def __init__(self, master=None): 

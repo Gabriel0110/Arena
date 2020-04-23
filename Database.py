@@ -48,11 +48,58 @@ class Database:
                                         spell_id INTEGER PRIMARY KEY,
                                         spell_name VARCHAR(64) NOT NULL,
                                         spell_desc VARCHAR(256) NOT NULL,
-                                        spell_rank INTEGER NOT NULL,
                                         spell_mana_cost INTEGER NOT NULL,
                                         spell_hasDamage BOOLEAN NOT NULL,
                                         spell_damage INTEGER
                                     ); """
+
+        self.create_assassin_spells_unlocked_table = """CREATE TABLE IF NOT EXISTS assassin_spells_unlocked (
+                                        char_id INTEGER PRIMARY KEY,
+                                        poison_dagger BOOLEAN NOT NULL,
+                                        assassinate BOOLEAN NOT NULL,
+                                        vanish BOOLEAN NOT NULL,
+                                        deception BOOLEAN NOT NULL
+                                    ); """
+
+        # self.create_warrior_spells_unlocked_table = """CREATE TABLE IF NOT EXISTS assassin_spells_unlocked (
+        #                                 char_id INTEGER PRIMARY KEY,
+        #                                 poison_dagger BOOLEAN NOT NULL,
+        #                                 assassinate BOOLEAN NOT NULL,
+        #                                 vanish BOOLEAN NOT NULL,
+        #                                 deception BOOLEAN NOT NULL
+        #                             ); """
+        
+        # self.create_mage_spells_unlocked_table = """CREATE TABLE IF NOT EXISTS assassin_spells_unlocked (
+        #                                 char_id INTEGER PRIMARY KEY,
+        #                                 poison_dagger BOOLEAN NOT NULL,
+        #                                 assassinate BOOLEAN NOT NULL,
+        #                                 vanish BOOLEAN NOT NULL,
+        #                                 deception BOOLEAN NOT NULL
+        #                             ); """
+
+        # self.create_necromancer_spells_unlocked_table = """CREATE TABLE IF NOT EXISTS assassin_spells_unlocked (
+        #                                 char_id INTEGER PRIMARY KEY,
+        #                                 poison_dagger BOOLEAN NOT NULL,
+        #                                 assassinate BOOLEAN NOT NULL,
+        #                                 vanish BOOLEAN NOT NULL,
+        #                                 deception BOOLEAN NOT NULL
+        #                             ); """
+
+        # self.create_voidstalker_spells_unlocked_table = """CREATE TABLE IF NOT EXISTS assassin_spells_unlocked (
+        #                                 char_id INTEGER PRIMARY KEY,
+        #                                 poison_dagger BOOLEAN NOT NULL,
+        #                                 assassinate BOOLEAN NOT NULL,
+        #                                 vanish BOOLEAN NOT NULL,
+        #                                 deception BOOLEAN NOT NULL
+        #                             ); """
+
+        # self.create_friar_spells_unlocked_table = """CREATE TABLE IF NOT EXISTS assassin_spells_unlocked (
+        #                                 char_id INTEGER PRIMARY KEY,
+        #                                 poison_dagger BOOLEAN NOT NULL,
+        #                                 assassinate BOOLEAN NOT NULL,
+        #                                 vanish BOOLEAN NOT NULL,
+        #                                 deception BOOLEAN NOT NULL
+        #                             ); """
 
         self.create_game_stats_table = """CREATE TABLE IF NOT EXISTS game_stats (
                                         char_id INTEGER PRIMARY KEY,
