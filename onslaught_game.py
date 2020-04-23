@@ -1005,7 +1005,7 @@ class Onslaught(arcade.View):
         arcade.set_background_color(arcade.color.GRAY)
 
     def on_update(self, delta_time: float):
-        global player
+        global player, game
         # If paused, don't update anything
         #if arcade.paused:
         #    return
@@ -1031,12 +1031,13 @@ class Onslaught(arcade.View):
 
         # Did you hit an enemy?
         if self.player.collides_with_list(self.enemies_list):
-            if not self.GOD_MODE:
-                arcade.close_window()
+            self.player.takeDamage(self.player.getMaxHealth()*0.1)
 
-        # for enemy in self.enemies_list:
-        #     if enemy.enemy_health <= 0:
-        #         enemy.remove_from_sprite_lists()
+        # Did you die?
+        if self.current_health <= 0:
+            # YOU DIED
+            # Freeze screen and pop up something saying you died, or take to summary screen, or take to summary screen AFTER popup message, etc
+            game.show_view(OnslaughtPreGameLobby(AfterCharacterSelect(CharacterSelect())))
 
         # Update everything
         self.all_sprites.update()
@@ -1066,6 +1067,12 @@ class Onslaught(arcade.View):
         arcade.draw_rectangle_outline(self.player.center_x, self.player.top+10, 70, 10, arcade.color.BLACK)
         self.hp_percent = self.current_health / self.max_health
         arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.hp_percent))/2), self.player.top+10, 69.7*self.hp_percent, 9.7, arcade.color.RED)
+
+        # Draw enemy health bars
+        for enemy in self.enemies_list:
+            arcade.draw_rectangle_outline(enemy.center_x, enemy.top+10, 70, 10, arcade.color.BLACK)
+            hp_percent = enemy.enemy_current_health / enemy.enemy_max_health
+            arcade.draw_rectangle_filled(enemy.center_x - ((69.7 - (69.7*hp_percent))/2), enemy.top+10, 69.7*hp_percent, 9.7, arcade.color.RED)
 
         self.all_sprites.draw()
 
@@ -1253,7 +1260,7 @@ class EnemySprite(arcade.Sprite):
                 if onslaught.enemyHit == False:
                     onslaught.enemyHit = True
                     print("ENEMY HIT BY MELEE BASIC ATTACK - DECREMENTING HEALTH BY 10")
-                    self.enemy_health -= 10
+                    self.enemy_current_health -= 10
             #else:
                 #onslaught.enemyHit = False
         elif onslaught.char_class == "Mage":
@@ -1262,15 +1269,16 @@ class EnemySprite(arcade.Sprite):
                     onslaught.enemyHit = True
                     onslaught.deleteAttack = True
                     print("ENEMY HIT BY RANGED BASIC ATTACK - DECREMENTING HEALTH BY 10")
-                    self.enemy_health -= 10
+                    self.enemy_current_health -= 10
             else:
                 onslaught.enemyHit = False
 
-        if self.enemy_health <= 0:
+        if self.enemy_current_health <= 0:
             self.remove_from_sprite_lists()
 
     def setup(self, health):
-        self.enemy_health = health
+        self.enemy_max_health = health
+        self.enemy_current_health = self.enemy_max_health
 
 class BasicAttackSprite(arcade.Sprite):
     def update(self):
@@ -1314,6 +1322,9 @@ class Character(arcade.Sprite):
 
     def getCurrentHealth(self):
         return self.player_current_health
+
+    def takeDamage(self, dmg):
+        self.player_current_health -= dmg
 
     def getCharStats(self):
         global CURRENT_CHAR
