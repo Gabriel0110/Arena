@@ -944,7 +944,7 @@ class OnslaughtPreGameLobby(arcade.View):
 class Onslaught(arcade.View):
     def __init__(self):
         super().__init__()
-        global player
+        global player, CURRENT_ROUND
 
         # Set up the empty sprite lists
         self.enemies_list = arcade.SpriteList()
@@ -954,6 +954,10 @@ class Onslaught(arcade.View):
         self.all_sprites = arcade.SpriteList()
 
         #self.all_sprites.append(self.weapon_list)
+
+        self.current_enemy_count = 0
+        self.total_enemy_count = 10 + CURRENT_ROUND*2
+        self.enemies_killed = 0
 
         self.player = player
         self.char_class = self.getCharClass()
@@ -1048,8 +1052,16 @@ class Onslaught(arcade.View):
 
         # Did you die?
         if self.current_health <= 0:
-            # YOU DIED
+            # YOU DIED - END THE ROUND
             # Freeze screen and pop up something saying you died, or take to summary screen, or take to summary screen AFTER popup message, etc
+            print("ROUND OVER - PLAYER HAS DIED!")
+            game.show_view(OnslaughtPreGameLobby(AfterCharacterSelect(CharacterSelect())))
+            self.player.player_current_health = self.player.getMaxHealth()
+
+        # Killed all enemies in round?
+        if self.enemies_killed >= self.total_enemy_count:
+            # END THE ROUND
+            print("ROUND OVER - ALL ENEMIES KILLED!")
             game.show_view(OnslaughtPreGameLobby(AfterCharacterSelect(CharacterSelect())))
             self.player.player_current_health = self.player.getMaxHealth()
 
@@ -1099,25 +1111,37 @@ class Onslaught(arcade.View):
         arcade.unschedule(self.setPlayerHit)
 
     def add_enemy(self, delta_time: float):
+        global CURRENT_ROUND
         #if arcade.paused:
         #    return
 
-        basic_enemy_health = 100
+        if self.current_enemy_count <= self.total_enemy_count:
+            basic_enemy_health = 100 + CURRENT_ROUND*20
 
-        # First, create the new enemy sprite
-        enemy = EnemySprite("images/enemy_sprite.png", 0.8)
-        enemy.setup(basic_enemy_health) # SET'S ENEMY HEALTH
+            # First, create the new enemy sprite
+            enemy = EnemySprite("images/enemy_sprite.png", 0.8)
+            enemy.setup(basic_enemy_health) # SET'S ENEMY HEALTH
 
-        # Set its position to a random x position and off-screen at the top
-        enemy.top = random.randint(SCREEN_HEIGHT, SCREEN_HEIGHT + 80)
-        enemy.left = random.randint(10, SCREEN_WIDTH - 10)
+            # Set its position to a random x position and off-screen at the top
+            enemy.top = random.randint(SCREEN_HEIGHT, SCREEN_HEIGHT + 80)
+            enemy.left = random.randint(10, SCREEN_WIDTH - 10)
 
-        # INITIAL enemy velocity -- it changes once they see the player
-        enemy.velocity = (0, -2)
+            # INITIAL enemy velocity -- it changes once they see the player
+            enemy.velocity = (0, -2)
 
-        # Add it to the enemies list and all_sprites list
-        self.enemies_list.append(enemy)
-        self.all_sprites.append(enemy)
+            # Add it to the enemies list and all_sprites list
+            self.enemies_list.append(enemy)
+            self.all_sprites.append(enemy)
+            self.current_enemy_count += 1
+        else:
+            return
+
+    def roundSummary(self, result):
+        # Update DB with new stats/items/etc gained from round, then go to summary view for player to see the summary of the round including gained stats/items
+        if result == "Won":
+            pass
+        if result == "Lost":
+            pass
 
     def on_key_press(self, key, modifiers):
         global game
@@ -1295,6 +1319,7 @@ class EnemySprite(arcade.Sprite):
 
         if self.enemy_current_health <= 0:
             self.remove_from_sprite_lists()
+            onslaught.enemies_killed += 1
 
     def setup(self, health):
         self.enemy_max_health = health
