@@ -1,6 +1,6 @@
 class Spells:
-    def poisonDagger(self):
-        """ Throw a poison-tipped dagger in the direction of your mouse that deals physical damage and slows the target for X seconds. """
+    def poisonShuriken(self):
+        """ Throw a poison-tipped shuriken in the direction of your mouse that deals physical damage and slows the target for X seconds. """
         pass
 
     def assassinate(self):

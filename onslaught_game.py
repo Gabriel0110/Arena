@@ -46,15 +46,15 @@ class GameSettings():
         self.STAMINA_HEALTH_MULTIPLIER = 12 # each stamina point gives 12 hp
         self.INTELLECT_MANA_MULTIPLIER = 10 # each intellect point gives 10 mana
 
-        self.AGILITY_CRIT_MULTIPLIER = 0.05 # each agility point gives 0.05% melee/range crit chance
-        self.INTELLECT_CRIT_MULTIPLIER = 0.05 # each intellect point gives 0.05% SPELL crit chance
+        self.AGILITY_CRIT_MULTIPLIER = 0.0005 # each agility point gives 0.0005% melee/range crit chance
+        self.INTELLECT_CRIT_MULTIPLIER = 0.0005 # each intellect point gives 0.0005% SPELL crit chance
 
         self.AGILITY_AP_MULTIPLIER = 2 # each point of agility gives 2 attack power
         self.STRENGTH_AP_MULTIPLIER = 4 # each point of strength gives 4 attack power
         self.AP_DAMAGE_MULTIPLIER = 2 # each point of attack power increases melee/ranged damage by 2  (WILL NEED TO MULTIPLY THIS TO ABILITY DAMAGE)
 
         self.INTELLECT_SP_MULTIPLIER = 2 # each point of intellect gives 2 spell power
-        self.SP_DAMAGE_MULTIPLIER = 2 # each point of spell power inceases spell damage by 2  (WILL NEED TO MULTIPLY THIS TO ABILITY DAMAGE)
+        self.SP_DAMAGE_MULTIPLIER = 3 # each point of spell power inceases spell damage by 3  (WILL NEED TO MULTIPLY THIS TO ABILITY DAMAGE)
 
     def setLevelRequirements(self):
         # Populates level exp requirements dict with all experience points required to get to each level (current max level is 50)
@@ -547,8 +547,8 @@ class CharacterCreationView(arcade.View):
         char_strength = 5
         char_intellect = 5
         char_agility = 5
-        char_attack_crit_chance = char_agility * game_settings.AGILITY_CRIT_MULTIPLIER
-        char_spell_crit_chance = char_intellect * game_settings.INTELLECT_CRIT_MULTIPLIER
+        char_attack_crit_chance = 0.05 + char_agility * game_settings.AGILITY_CRIT_MULTIPLIER
+        char_spell_crit_chance = 0.05 + char_intellect * game_settings.INTELLECT_CRIT_MULTIPLIER
         char_spell_power = char_intellect * game_settings.INTELLECT_SP_MULTIPLIER
         char_attack_power = char_agility * game_settings.AGILITY_AP_MULTIPLIER + char_strength * game_settings.STRENGTH_AP_MULTIPLIER
         char_move_speed = 10
@@ -764,6 +764,8 @@ class OnslaughtPreGameLobby(arcade.View):
         global player
         self.view = view
 
+        self.game_settings = GameSettings()
+
         # Set up the empty sprite lists
         self.spell_slot_list = arcade.SpriteList()
         self.all_sprites = arcade.SpriteList()
@@ -771,7 +773,7 @@ class OnslaughtPreGameLobby(arcade.View):
         self.theme = getButtonThemes()
         self.button_list.append(LeaveLobbyButton(self, SCREEN_WIDTH*0.95, SCREEN_HEIGHT*0.97, 200, 50, theme=self.theme))
 
-        self.player_velocity = 10
+        self.player_velocity = 8
         self.curr_round_number = self.getCurrentRoundNumber()
 
         self.setup()
@@ -952,7 +954,7 @@ class Onslaught(arcade.View):
         self.player = player
         self.char_class = self.getCharClass()
         self.basic_attack_img = self.getBasicAttackImage()
-        self.sword = WeaponSprite("images/sword.png", 0.4)
+        self.sword = WeaponSprite("images/sword.png", 0.5)
         self.swingingWeapon = False
         self.quadrant = ""
         self.swing_timer = 0
@@ -1014,6 +1016,7 @@ class Onslaught(arcade.View):
         # Keep updating the player's current health
         self.current_health = self.player.getCurrentHealth()
 
+        # Keep weapon with the player when swinging
         if self.swingingWeapon is False:
             arcade.unschedule(self.swingWeapon) 
         else:
@@ -1035,7 +1038,7 @@ class Onslaught(arcade.View):
             if self.playerCanBeHit:
                 self.player.takeDamage(self.player.getMaxHealth()*0.1)
                 self.playerCanBeHit = False
-                arcade.schedule(self.setPlayerHit, 1.0)
+                arcade.schedule(self.setPlayerHit, 0.75)
 
         # Did you die?
         if self.current_health <= 0:
@@ -1043,6 +1046,10 @@ class Onslaught(arcade.View):
             # Freeze screen and pop up something saying you died, or take to summary screen, or take to summary screen AFTER popup message, etc
             game.show_view(OnslaughtPreGameLobby(AfterCharacterSelect(CharacterSelect())))
             self.player.player_current_health = self.player.getMaxHealth()
+
+        # Have enemies follow the player
+        for enemy in self.enemies_list:
+            enemy.follow_sprite(self.player)
 
         # Update everything
         self.all_sprites.update()
@@ -1089,15 +1096,17 @@ class Onslaught(arcade.View):
         #if arcade.paused:
         #    return
 
+        basic_enemy_health = 100
+
         # First, create the new enemy sprite
         enemy = EnemySprite("images/enemy_sprite.png", 0.8)
-        enemy.setup(50)
+        enemy.setup(basic_enemy_health) # SET'S ENEMY HEALTH
 
         # Set its position to a random x position and off-screen at the top
         enemy.top = random.randint(SCREEN_HEIGHT, SCREEN_HEIGHT + 80)
         enemy.left = random.randint(10, SCREEN_WIDTH - 10)
 
-        # FIX ---- Set it to GO TOWARDS PLAYER
+        # INITIAL enemy velocity -- it changes once they see the player
         enemy.velocity = (0, -2)
 
         # Add it to the enemies list and all_sprites list
@@ -1248,7 +1257,7 @@ class Onslaught(arcade.View):
         RADIANS_PER_FRAME = 1.8
         arcade.start_render()
 
-        self.sword.turn_right(8)
+        self.sword.turn_right(10)
 
         self.swing_timer += 1/80
         if self.swing_timer >= 20/80:
@@ -1268,17 +1277,15 @@ class EnemySprite(arcade.Sprite):
             if self.collides_with_sprite(onslaught.sword):
                 if onslaught.enemyHit == False:
                     onslaught.enemyHit = True
-                    print("ENEMY HIT BY MELEE BASIC ATTACK - DECREMENTING HEALTH BY 10")
-                    self.enemy_current_health -= 10
-            #else:
-                #onslaught.enemyHit = False
+                    print("ENEMY HIT BY MELEE BASIC ATTACK")
+                    self.enemy_current_health -= onslaught.player.basicDamage()
         elif onslaught.char_class == "Mage":
             if self.collides_with_list(onslaught.basic_attack_list):
                 if onslaught.enemyHit == False:
                     onslaught.enemyHit = True
                     onslaught.deleteAttack = True
-                    print("ENEMY HIT BY RANGED BASIC ATTACK - DECREMENTING HEALTH BY 10")
-                    self.enemy_current_health -= 10
+                    print("ENEMY HIT BY RANGED BASIC ATTACK")
+                    self.enemy_current_health -= onslaught.player.basicDamage()
             else:
                 onslaught.enemyHit = False
 
@@ -1288,6 +1295,34 @@ class EnemySprite(arcade.Sprite):
     def setup(self, health):
         self.enemy_max_health = health
         self.enemy_current_health = self.enemy_max_health
+
+    def follow_sprite(self, player_sprite):
+        import math
+        self.center_x += self.change_x
+        self.center_y += self.change_y
+
+        # Random 1 in 100 chance that we'll change from our old direction and
+        # then re-aim toward the player
+        if random.randrange(25) == 0:
+            start_x = self.center_x
+            start_y = self.center_y
+
+            # Get the destination location for the bullet
+            dest_x = player_sprite.center_x
+            dest_y = player_sprite.center_y
+
+            # Do math to calculate how to get the bullet to the destination.
+            # Calculation the angle in radians between the start points
+            # and end points. This is the angle the bullet will travel.
+            x_diff = dest_x - start_x
+            y_diff = dest_y - start_y
+            angle = math.atan2(y_diff, x_diff)
+
+            # Taking into account the angle, calculate our change_x
+            # and change_y. Velocity is how fast the bullet travels.
+            self.velocity = (math.cos(angle) * 2.5, math.sin(angle) * 2.5)
+            #self.change_x = math.cos(angle) * 1.5
+            #self.change_y = math.sin(angle) * 1.5
 
 class BasicAttackSprite(arcade.Sprite):
     def update(self):
@@ -1315,10 +1350,30 @@ class WeaponSprite(arcade.Sprite):
 
 class Character(arcade.Sprite):
     def setup(self):
-        #self.player_class = self.getCharClass()
-        self.player_stats = self.getCharStats()
-        self.player_max_health = self.player_stats[0][6]
+        self.game_settings = GameSettings()
+
+        self.player_class = self.getCharClass()
+
+        # (int(char_id), str(CURRENT_ACCT_ID), str(self.char_name), str(char_texture), str(self.char_class), int(char_level), int(char_health), int(char_mana), int(char_strength), int(char_stamina), int(char_intellect), int(char_agility), float(char_attack_crit_chance), float(char_spell_crit_chance), int(char_spell_power), int(char_attack_power), int(char_move_speed), int(curr_exp), int(curr_pvp_rank))
+        self.player_stats = self.getCharStats()[0]
+
+        self.player_max_health = self.player_stats[6]
         self.player_current_health = self.player_max_health # start current health at the max health
+        self.player_max_mana = self.player_stats[7]
+        self.player_current_mana = self.player_max_mana
+
+        self.strength = self.player_stats[8]
+        self.stamina = self.player_stats[9]
+        self.intellect = self.player_stats[10]
+        self.agility = self.player_stats[11]
+
+        self.attack_crit = 0.05 + self.agility * self.game_settings.AGILITY_CRIT_MULTIPLIER
+        self.spell_crit = 0.05 + self.intellect * self.game_settings.INTELLECT_CRIT_MULTIPLIER
+
+        self.attack_power = self.agility * self.game_settings.AGILITY_AP_MULTIPLIER + self.strength * self.game_settings.STRENGTH_AP_MULTIPLIER
+        self.spell_power = self.intellect * self.game_settings.INTELLECT_SP_MULTIPLIER
+
+        self.player_current_exp = self.player_stats[17]
 
     def update(self):
         super().update()
@@ -1334,6 +1389,27 @@ class Character(arcade.Sprite):
 
     def takeDamage(self, dmg):
         self.player_current_health -= dmg
+
+    def basicDamage(self):
+        if self.player_class == "Assassin":
+            damage = 3 + self.attack_power
+            if random.random() <= self.attack_crit:
+                damage *= 1.5
+                print("Player critical strike hit for {}!".format(damage))
+                return damage
+            else:
+                print("Player attack hit for {}".format(damage))
+                return damage
+        elif self.player_class == "Mage":
+            damage = 3 + self.spell_power
+            print("Caster crit chance: {}".format(self.spell_crit))
+            if random.random() <= self.spell_crit:
+                damage *= 1.5
+                print("Player critical strike hit for {}!".format(damage))
+                return damage
+            else:
+                print("Player attack hit for {}".format(damage))
+                return damage
 
     def getCharStats(self):
         global CURRENT_CHAR

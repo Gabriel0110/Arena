@@ -55,7 +55,7 @@ class Database:
 
         self.create_assassin_spells_unlocked_table = """CREATE TABLE IF NOT EXISTS assassin_spells_unlocked (
                                         char_id INTEGER PRIMARY KEY,
-                                        poison_dagger BOOLEAN NOT NULL,
+                                        poison_shuriken BOOLEAN NOT NULL,
                                         assassinate BOOLEAN NOT NULL,
                                         vanish BOOLEAN NOT NULL,
                                         deception BOOLEAN NOT NULL
