@@ -35,6 +35,7 @@ all_char_ids = []
 CURRENT_USERNAME = ""
 CURRENT_ACCT_ID = None
 CURRENT_CHAR = None
+CURRENT_ROUND = 0
 
 player = None # holds the single player character sprite when created
 
@@ -761,7 +762,7 @@ class PvpArena(arcade.View):
 class OnslaughtPreGameLobby(arcade.View):
     def __init__(self, view):
         super().__init__()
-        global player
+        global player, CURRENT_ROUND
         self.view = view
 
         self.game_settings = GameSettings()
@@ -775,6 +776,7 @@ class OnslaughtPreGameLobby(arcade.View):
 
         self.player_velocity = 8
         self.curr_round_number = self.getCurrentRoundNumber()
+        CURRENT_ROUND = self.curr_round_number
 
         self.setup()
 
@@ -878,7 +880,7 @@ class OnslaughtPreGameLobby(arcade.View):
         arcade.draw_text("Trinket", SCREEN_WIDTH*0.6625, SCREEN_HEIGHT*0.025, arcade.color.BLACK, 16, bold=True)
         arcade.draw_text("Begin Round", self.entrance.left - 30, SCREEN_HEIGHT/2 - 50, arcade.color.BLACK, 16, bold=True, rotation=270.0, anchor_x="center")
         if self.player.level != 50:
-            arcade.draw_text("Character Level: {}\nExperience: {}/{}".format(self.player.level, self.player.current_exp, self.game_settings.level_exp_requirements[self.player.level+1]), SCREEN_WIDTH*0.05, SCREEN_HEIGHT*0.97, arcade.color.BLACK, 24, bold=True, anchor_x="center")
+            arcade.draw_text("Character Level: {}\nExperience: {}/{}".format(self.player.level, self.player.current_exp, self.game_settings.level_exp_requirements[self.player.level+1]), SCREEN_WIDTH*0.065, SCREEN_HEIGHT*0.95, arcade.color.WHITE, 24, bold=True, anchor_x="center")
 
         # Draw player name and health bar
         arcade.draw_text(CURRENT_CHAR, self.player.center_x, self.player.top+15, arcade.color.WHITE, 16, bold=True, anchor_x="center")
@@ -1010,7 +1012,7 @@ class Onslaught(arcade.View):
         arcade.set_background_color(arcade.color.GRAY)
 
     def on_update(self, delta_time: float):
-        global player, game
+        global player, game, CURRENT_ROUND
         # If paused, don't update anything
         #if arcade.paused:
         #    return
@@ -1035,10 +1037,12 @@ class Onslaught(arcade.View):
                 self.sword.center_x = self.player.center_x + 30
                 self.sword.center_y = self.player.center_y - 30
 
-        # Did you hit an enemy? --- NEED TO MAKE IT WHERE PLAYER CAN ONLY TAKE DAMAGE ONCE EVERY SECOND TO NOT GET OBLITERATED
+        # Did an enemy touch you? --- player can only be hit every 0.75 seconds after being hit before
+        enemy_damage = 20 * (1.0 + (CURRENT_ROUND / 10))
         if self.player.collides_with_list(self.enemies_list):
             if self.playerCanBeHit:
-                self.player.takeDamage(self.player.getMaxHealth()*0.1)
+                self.player.takeDamage(enemy_damage)
+                print("Enemy dealth {} damage.".format(enemy_damage))
                 self.playerCanBeHit = False
                 arcade.schedule(self.setPlayerHit, 0.75)
 
@@ -1279,14 +1283,12 @@ class EnemySprite(arcade.Sprite):
             if self.collides_with_sprite(onslaught.sword):
                 if onslaught.enemyHit == False:
                     onslaught.enemyHit = True
-                    print("ENEMY HIT BY MELEE BASIC ATTACK")
                     self.enemy_current_health -= onslaught.player.basicDamage()
         elif onslaught.char_class == "Mage":
             if self.collides_with_list(onslaught.basic_attack_list):
                 if onslaught.enemyHit == False:
                     onslaught.enemyHit = True
                     onslaught.deleteAttack = True
-                    print("ENEMY HIT BY RANGED BASIC ATTACK")
                     self.enemy_current_health -= onslaught.player.basicDamage()
             else:
                 onslaught.enemyHit = False
