@@ -49,8 +49,8 @@ class GameSettings():
         self.AGILITY_CRIT_MULTIPLIER = 0.0005 # each agility point gives 0.0005% melee/range crit chance
         self.INTELLECT_CRIT_MULTIPLIER = 0.0005 # each intellect point gives 0.0005% SPELL crit chance
 
-        self.AGILITY_AP_MULTIPLIER = 2 # each point of agility gives 2 attack power
-        self.STRENGTH_AP_MULTIPLIER = 4 # each point of strength gives 4 attack power
+        self.AGILITY_AP_MULTIPLIER = 1 # each point of agility gives 1 attack power
+        self.STRENGTH_AP_MULTIPLIER = 3 # each point of strength gives 3 attack power
         self.AP_DAMAGE_MULTIPLIER = 2 # each point of attack power increases melee/ranged damage by 2  (WILL NEED TO MULTIPLY THIS TO ABILITY DAMAGE)
 
         self.INTELLECT_SP_MULTIPLIER = 2 # each point of intellect gives 2 spell power
@@ -877,6 +877,8 @@ class OnslaughtPreGameLobby(arcade.View):
 
         arcade.draw_text("Trinket", SCREEN_WIDTH*0.6625, SCREEN_HEIGHT*0.025, arcade.color.BLACK, 16, bold=True)
         arcade.draw_text("Begin Round", self.entrance.left - 30, SCREEN_HEIGHT/2 - 50, arcade.color.BLACK, 16, bold=True, rotation=270.0, anchor_x="center")
+        if self.player.level != 50:
+            arcade.draw_text("Character Level: {}\nExperience: {}/{}".format(self.player.level, self.player.current_exp, self.game_settings.level_exp_requirements[self.player.level+1]), SCREEN_WIDTH*0.05, SCREEN_HEIGHT*0.97, arcade.color.BLACK, 24, bold=True, anchor_x="center")
 
         # Draw player name and health bar
         arcade.draw_text(CURRENT_CHAR, self.player.center_x, self.player.top+15, arcade.color.WHITE, 16, bold=True, anchor_x="center")
@@ -1357,6 +1359,8 @@ class Character(arcade.Sprite):
         # (int(char_id), str(CURRENT_ACCT_ID), str(self.char_name), str(char_texture), str(self.char_class), int(char_level), int(char_health), int(char_mana), int(char_strength), int(char_stamina), int(char_intellect), int(char_agility), float(char_attack_crit_chance), float(char_spell_crit_chance), int(char_spell_power), int(char_attack_power), int(char_move_speed), int(curr_exp), int(curr_pvp_rank))
         self.player_stats = self.getCharStats()[0]
 
+        self.level = self.player_stats[5]
+
         self.player_max_health = self.player_stats[6]
         self.player_current_health = self.player_max_health # start current health at the max health
         self.player_max_mana = self.player_stats[7]
@@ -1373,7 +1377,7 @@ class Character(arcade.Sprite):
         self.attack_power = self.agility * self.game_settings.AGILITY_AP_MULTIPLIER + self.strength * self.game_settings.STRENGTH_AP_MULTIPLIER
         self.spell_power = self.intellect * self.game_settings.INTELLECT_SP_MULTIPLIER
 
-        self.player_current_exp = self.player_stats[17]
+        self.current_exp = self.player_stats[17]
 
     def update(self):
         super().update()
@@ -1401,7 +1405,7 @@ class Character(arcade.Sprite):
                 print("Player attack hit for {}".format(damage))
                 return damage
         elif self.player_class == "Mage":
-            damage = 3 + self.spell_power
+            damage = 4 + self.spell_power
             print("Caster crit chance: {}".format(self.spell_crit))
             if random.random() <= self.spell_crit:
                 damage *= 1.5
