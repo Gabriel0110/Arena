@@ -17,6 +17,7 @@ SCREEN_TITLE = "Onslaught"
 
 game = None # HOLDS THE ACTIVE VIEW AND USED TO CHANGE VIEWS
 onslaught = None # hold Onslaught() creation to call to
+gamePaused = False
 
 characterSelected = False
 char_selected_bttn_loc = []
@@ -66,7 +67,7 @@ class GameSettings():
                 self.level_exp_requirements[level] = level_req
             else:
                 self.level_exp_requirements[level] = level_req
-            level_req *= 1.3
+            level_req *= 2
 
 def createAlert(text, title, button):
     pyautogui.alert(text=text, title=title, button=button)
@@ -141,9 +142,14 @@ class ContinueButton(TextButton):
         self.view = view
 
     def on_press(self):
-        #global game
-        game_view = self.view
-        game.show_view(game_view)
+        global gamePaused
+        if "RoundSummary" in str(self.view):
+            game_view = OnslaughtPreGameLobby(AfterCharacterSelect(CharacterSelect()))
+            game.show_view(game_view)
+        else:
+            gamePaused = False
+            game_view = self.view
+            game.show_view(game_view)
 
 class LeaveLobbyButton(TextButton):
     def __init__(self, view, x=0, y=0, width=150, height=40, text="Leave Lobby", theme=None):
@@ -426,8 +432,8 @@ class CharacterSelect(arcade.View):
             characters = c.execute("""SELECT * FROM characters WHERE acct_id = ?""", (CURRENT_ACCT_ID,)).fetchall()
 
             char_dict = {}
-            for (char_id, acct_id, char_name, char_texture, char_class, char_level, char_health, char_mana, char_strength, char_stamina, char_intellect, char_agility, char_attack_crit_chance, char_spell_crit_chance, char_spell_power, char_attack_power, char_move_speed, curr_exp, curr_pvp_rank) in characters:
-                char_dict[char_id] = [acct_id, char_name, char_texture, char_class, char_level, char_health, char_mana, char_strength, char_stamina, char_intellect, char_agility, char_attack_crit_chance, char_spell_crit_chance, char_spell_power, char_attack_power, char_move_speed, curr_exp, curr_pvp_rank]
+            for (char_id, acct_id, char_name, char_texture, char_class, char_level, char_strength, char_stamina, char_intellect, char_agility, char_move_speed, curr_exp, curr_pvp_rank, curr_round_num) in characters:
+                char_dict[char_id] = [acct_id, char_name, char_texture, char_class, char_level, char_strength, char_stamina, char_intellect, char_agility, char_move_speed, curr_exp, curr_pvp_rank, curr_round_num]
             print("CHAR_DICT: {}".format(char_dict))
             return char_dict
         except Error as e:
@@ -557,11 +563,12 @@ class CharacterCreationView(arcade.View):
         char_mana = char_intellect * game_settings.INTELLECT_MANA_MULTIPLIER
         curr_exp = 0
         curr_pvp_rank = 0
+        curr_round_num = 1
 
         # Insert char_id (should be CURRENT_ACCT_ID -- a global variable), acct_id, char_name, char_texture, char_class and ALL of the starter stats created above into the characters DB
         insertions = {}
-        query = """INSERT INTO characters VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
-        values = (int(char_id), str(CURRENT_ACCT_ID), str(self.char_name), str(char_texture), str(self.char_class), int(char_level), int(char_health), int(char_mana), int(char_strength), int(char_stamina), int(char_intellect), int(char_agility), float(char_attack_crit_chance), float(char_spell_crit_chance), int(char_spell_power), int(char_attack_power), int(char_move_speed), int(curr_exp), int(curr_pvp_rank))
+        query = """INSERT INTO characters VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+        values = (int(char_id), str(CURRENT_ACCT_ID), str(self.char_name), str(char_texture), str(self.char_class), int(char_level), int(char_strength), int(char_stamina), int(char_intellect), int(char_agility), int(char_move_speed), int(curr_exp), int(curr_pvp_rank), int(curr_round_num))
         insertions[values] = query
 
         result = db.insert(insertions)
@@ -573,7 +580,7 @@ class CharacterCreationView(arcade.View):
             createAlert("Character created!", "Success", "OK")
             total_characters += 1
             game.show_view(CharacterSelect())
-            self.insertGameStats(char_id)
+            #self.insertGameStats(char_id)
 
     def getCharIds(self):
         c = db.conn.cursor()
@@ -652,6 +659,10 @@ class PauseMenu(arcade.View):
     # For pause and unpause to work, the call to PauseMenu must have self sent with it, so pause = PauseMenu(self), then self.window.show_view(pause)
     def __init__(self, game_view):
         super().__init__()
+        global gamePaused
+
+        gamePaused = True
+
         self.game_view = game_view
 
         self.theme = getButtonThemes()
@@ -796,9 +807,11 @@ class OnslaughtPreGameLobby(arcade.View):
         self.all_sprites.append(self.player)
         player = self.player
 
-        # Set up for health bar
+        # Set up for health and mana bars
         self.max_health = self.player.getMaxHealth()
         self.current_health = self.player.getCurrentHealth()
+        self.max_mana = self.player.getMaxMana()
+        self.current_mana = self.player.getCurrentMana()
 
         # Draw spell bar UI sprites, then add spell images inside them
         centers = [SCREEN_WIDTH*0.425, SCREEN_WIDTH*0.475, SCREEN_WIDTH*0.525, SCREEN_WIDTH*0.575, SCREEN_WIDTH*0.675]
@@ -844,8 +857,9 @@ class OnslaughtPreGameLobby(arcade.View):
         #if arcade.paused:
         #    return
 
-        # Keep updating the player's current health
+        # Keep updating the player's current health and mana
         self.current_health = self.player.getCurrentHealth()
+        self.current_mana = self.player.getCurrentMana()
 
         # Did the player step into the 
         if self.player.collides_with_sprite(self.entrance):
@@ -880,13 +894,20 @@ class OnslaughtPreGameLobby(arcade.View):
         arcade.draw_text("Trinket", SCREEN_WIDTH*0.6625, SCREEN_HEIGHT*0.025, arcade.color.BLACK, 16, bold=True)
         arcade.draw_text("Begin Round", self.entrance.left - 30, SCREEN_HEIGHT/2 - 50, arcade.color.BLACK, 16, bold=True, rotation=270.0, anchor_x="center")
         if self.player.level != 50:
-            arcade.draw_text("Character Level: {}\nExperience: {}/{}".format(self.player.level, self.player.current_exp, self.game_settings.level_exp_requirements[self.player.level+1]), SCREEN_WIDTH*0.065, SCREEN_HEIGHT*0.95, arcade.color.WHITE, 24, bold=True, anchor_x="center")
+            arcade.draw_text("Character Level: {}\nExperience: {}/{}".format(self.player.level, int(self.player.current_exp), int(self.game_settings.level_exp_requirements[self.player.level+1])), SCREEN_WIDTH*0.07, SCREEN_HEIGHT*0.95, arcade.color.WHITE, 24, bold=True, anchor_x="center")
 
-        # Draw player name and health bar
-        arcade.draw_text(CURRENT_CHAR, self.player.center_x, self.player.top+15, arcade.color.WHITE, 16, bold=True, anchor_x="center")
-        arcade.draw_rectangle_outline(self.player.center_x, self.player.top+10, 70, 10, arcade.color.BLACK)
+        # Draw player name
+        arcade.draw_text(CURRENT_CHAR, self.player.center_x, self.player.top+17.5, arcade.color.WHITE, 16, bold=True, anchor_x="center")
+
+        # Draw health bar
+        arcade.draw_rectangle_outline(self.player.center_x, self.player.top+12.5, 70, 10, arcade.color.BLACK)
         self.hp_percent = self.current_health / self.max_health
-        arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.hp_percent))/2), self.player.top+10, 69.7*self.hp_percent, 9.7, arcade.color.RED)
+        arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.hp_percent))/2), self.player.top+13, 69.7*self.hp_percent, 9.7, arcade.color.RED)
+
+        # Draw mana bar
+        arcade.draw_rectangle_outline(self.player.center_x, self.player.top+2, 70, 10, arcade.color.BLACK)
+        self.mana_percent = self.current_mana / self.max_mana
+        arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.mana_percent))/2), self.player.top+2, 69.7*self.mana_percent, 9.7, arcade.color.BLUE)
 
         # Display current round
         arcade.draw_text("Current Round: {}".format(self.curr_round_number), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.96, arcade.color.WHITE, 30, bold=True, anchor_x="center")
@@ -935,7 +956,7 @@ class OnslaughtPreGameLobby(arcade.View):
         c = db.conn.cursor()
         try:
             char_id = c.execute("""SELECT char_id FROM characters WHERE char_name = ?""", (CURRENT_CHAR,)).fetchall()
-            round_num = c.execute("""SELECT curr_round_number FROM game_stats WHERE char_id = ?""", (str(char_id[0][0]),)).fetchall()
+            round_num = c.execute("""SELECT curr_round_num FROM characters WHERE char_id = ?""", (str(char_id[0][0]),)).fetchall()
         except Error as e:
             print(e)
             exit()
@@ -945,6 +966,8 @@ class Onslaught(arcade.View):
     def __init__(self):
         super().__init__()
         global player, CURRENT_ROUND
+
+        self.game_settings = GameSettings()
 
         # Set up the empty sprite lists
         self.enemies_list = arcade.SpriteList()
@@ -990,9 +1013,11 @@ class Onslaught(arcade.View):
         self.player.center_x = SCREEN_WIDTH/2
         self.all_sprites.append(self.player)
 
-        # Set up for health bar
+        # Set up for health and mana bars
         self.max_health = self.player.getMaxHealth()
         self.current_health = self.player.getCurrentHealth()
+        self.max_mana = self.player.getMaxMana()
+        self.current_mana = self.player.getCurrentMana()
 
         # Draw spell bar UI sprites, then add spell images inside them
         centers = [SCREEN_WIDTH*0.425, SCREEN_WIDTH*0.475, SCREEN_WIDTH*0.525, SCREEN_WIDTH*0.575, SCREEN_WIDTH*0.675]
@@ -1021,8 +1046,9 @@ class Onslaught(arcade.View):
         #if arcade.paused:
         #    return
 
-        # Keep updating the player's current health
+        # Keep updating the player's current health and mana
         self.current_health = self.player.getCurrentHealth()
+        self.current_mana = self.player.getCurrentMana()
 
         # Keep weapon with the player when swinging
         if self.swingingWeapon is False:
@@ -1055,15 +1081,17 @@ class Onslaught(arcade.View):
             # YOU DIED - END THE ROUND
             # Freeze screen and pop up something saying you died, or take to summary screen, or take to summary screen AFTER popup message, etc
             print("ROUND OVER - PLAYER HAS DIED!")
-            game.show_view(OnslaughtPreGameLobby(AfterCharacterSelect(CharacterSelect())))
+            self.roundSummary("Lost")
             self.player.player_current_health = self.player.getMaxHealth()
+            self.enemies_killed = 0
 
         # Killed all enemies in round?
         if self.enemies_killed >= self.total_enemy_count:
             # END THE ROUND
             print("ROUND OVER - ALL ENEMIES KILLED!")
-            game.show_view(OnslaughtPreGameLobby(AfterCharacterSelect(CharacterSelect())))
+            self.roundSummary("Won")
             self.player.player_current_health = self.player.getMaxHealth()
+            self.enemies_killed = 0
 
         # Have enemies follow the player
         for enemy in self.enemies_list:
@@ -1092,11 +1120,18 @@ class Onslaught(arcade.View):
 
         arcade.draw_text("Trinket", SCREEN_WIDTH*0.6625, SCREEN_HEIGHT*0.025, arcade.color.BLACK, 16, bold=True)
 
-        # Draw player name and health bar
-        arcade.draw_text(CURRENT_CHAR, self.player.center_x, self.player.top+15, arcade.color.WHITE, 16, bold=True, anchor_x="center")
-        arcade.draw_rectangle_outline(self.player.center_x, self.player.top+10, 70, 10, arcade.color.BLACK)
+        # Draw player name
+        arcade.draw_text(CURRENT_CHAR, self.player.center_x, self.player.top+17.5, arcade.color.WHITE, 16, bold=True, anchor_x="center")
+
+        # Draw health bar
+        arcade.draw_rectangle_outline(self.player.center_x, self.player.top+12.5, 70, 10, arcade.color.BLACK)
         self.hp_percent = self.current_health / self.max_health
-        arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.hp_percent))/2), self.player.top+10, 69.7*self.hp_percent, 9.7, arcade.color.RED)
+        arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.hp_percent))/2), self.player.top+13, 69.7*self.hp_percent, 9.7, arcade.color.RED)
+
+        # Draw mana bar
+        arcade.draw_rectangle_outline(self.player.center_x, self.player.top+2, 70, 10, arcade.color.BLACK)
+        self.mana_percent = self.current_mana / self.max_mana
+        arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.mana_percent))/2), self.player.top+2, 69.7*self.mana_percent, 9.7, arcade.color.BLUE)
 
         # Draw enemy health bars
         for enemy in self.enemies_list:
@@ -1111,12 +1146,13 @@ class Onslaught(arcade.View):
         arcade.unschedule(self.setPlayerHit)
 
     def add_enemy(self, delta_time: float):
-        global CURRENT_ROUND
-        #if arcade.paused:
-        #    return
+        global CURRENT_ROUND, gamePaused
+        
+        if gamePaused:
+            return
 
         if self.current_enemy_count <= self.total_enemy_count:
-            basic_enemy_health = 100 + CURRENT_ROUND*20
+            basic_enemy_health = 100 + CURRENT_ROUND*60
 
             # First, create the new enemy sprite
             enemy = EnemySprite("images/enemy_sprite.png", 0.8)
@@ -1137,11 +1173,76 @@ class Onslaught(arcade.View):
             return
 
     def roundSummary(self, result):
+        global game, CURRENT_ROUND, CURRENT_CHAR
         # Update DB with new stats/items/etc gained from round, then go to summary view for player to see the summary of the round including gained stats/items
+        # Will need to check for character levelup after each round, whether win or lose
         if result == "Won":
-            pass
+            # Give player stats necessary AND update curr_round_num in DB to +1
+            exp_earned = (40 * self.enemies_killed) + (CURRENT_ROUND * 100)
+            self.player.current_exp += exp_earned
+            CURRENT_ROUND += 1
+
+            leveledUp = False
+
+            # Check if levelup
+            if self.player.current_exp >= self.game_settings.level_exp_requirements[self.player.level+1]:
+                # LEVELUP -- setup new stat point increases and update DB with new stats for character
+                leveledUp = True
+                self.player.current_exp -= self.game_settings.level_exp_requirements[self.player.level+1]
+                self.player.level += 1
+                self.player.strength += 4
+                self.player.agility += 4
+                self.player.intellect += 4
+                self.player.stamina += 4
+                
+                query = """UPDATE characters SET char_level = ?, char_strength = ?, char_agility = ?, char_intellect = ?, char_stamina = ?, curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
+                data = (self.player.level, self.player.strength, self.player.agility, self.player.intellect, self.player.stamina, self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
+                self.updateStats(query, data)
+            else:
+                query = """UPDATE characters SET curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
+                data = (self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
+                self.updateStats(query, data)
+
+            # Change view to summary view that has continue button that brings the player back to pregame lobby
+            game.show_view(RoundSummaryView("WIN", self.enemies_killed, leveledUp, exp_earned))
         if result == "Lost":
-            pass
+            # Still reward player with experience from enemies killed, but nothing else UNLESS leveled up
+            exp_earned = (40 * self.enemies_killed)
+            self.player.current_exp += exp_earned
+
+            leveledUp = False
+
+            # Check if levelup
+            if self.player.current_exp >= self.game_settings.level_exp_requirements[self.player.level+1]:
+                # LEVELUP -- setup new stat point increases and update DB with new stats for character
+                leveledUp = True
+                self.player.current_exp -= self.game_settings.level_exp_requirements[self.player.level+1]
+                self.player.level += 1
+                self.player.strength += 4
+                self.player.agility += 4
+                self.player.intellect += 4
+                self.player.stamina += 4
+                
+                query = """UPDATE characters SET char_level = ?, char_strength = ?, char_agility = ?, char_intellect = ?, char_stamina = ?, curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
+                data = (self.player.level, self.player.strength, self.player.agility, self.player.intellect, self.player.stamina, self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
+                self.updateStats(query, data)
+            else:
+                query = """UPDATE characters SET curr_exp = ? WHERE char_name = ?"""
+                data = (self.player.current_exp, CURRENT_CHAR)
+                self.updateStats(query, data)
+
+            # Change view to summary view that has continue button that brings the player back to pregame lobby
+            game.show_view(RoundSummaryView("LOSS", self.enemies_killed, leveledUp, exp_earned))
+
+    def updateStats(self, query, data):
+        c = db.conn.cursor()
+        try:
+            c.execute(query, data)
+            db.conn.commit()
+            print("Record updated successfully!")
+        except Error as e:
+            print(e)
+            exit()
 
     def on_key_press(self, key, modifiers):
         global game
@@ -1298,6 +1399,39 @@ class Onslaught(arcade.View):
             arcade.unschedule(self.swingWeapon)
             return
 
+class RoundSummaryView(arcade.View):
+    def __init__(self, result, enemies_killed, leveledUp, exp_earned):
+        super().__init__()
+        self.result = result
+        self.enemies_killed = enemies_killed
+        self.leveledUp = leveledUp
+        self.exp_earned = exp_earned
+
+        self.theme = getButtonThemes()
+        self.button_list.append(ContinueButton(self, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.1, 200, 50, theme=self.theme))
+
+    def on_show(self):
+        arcade.set_background_color(arcade.color.GRAY)
+
+    def on_draw(self):
+        arcade.start_render()
+
+        arcade.draw_text("Round Summary", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.7, arcade.color.WHITE, font_size=40, anchor_x="center")
+        arcade.draw_text("Result: {}".format(self.result), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.6, arcade.color.WHITE, font_size=30, anchor_x="center")
+        arcade.draw_text("Enemies killed: {}".format(self.enemies_killed), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.55, arcade.color.WHITE, font_size=30, anchor_x="center")
+        arcade.draw_text("Experience earned: {}".format(self.exp_earned), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.5, arcade.color.WHITE, font_size=30, anchor_x="center")
+
+        if self.leveledUp:
+            arcade.draw_text("LEVEL UP!", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.4, arcade.color.WHITE, font_size=40, anchor_x="center")
+            arcade.draw_text("-------------", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.385, arcade.color.WHITE, font_size=40, anchor_x="center")
+            arcade.draw_text("Strength +4", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.35, arcade.color.WHITE, font_size=20, anchor_x="center")
+            arcade.draw_text("Agility +4", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.325, arcade.color.WHITE, font_size=20, anchor_x="center")
+            arcade.draw_text("Intellect +4", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.3, arcade.color.WHITE, font_size=20, anchor_x="center")
+            arcade.draw_text("Stamina +4", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.275, arcade.color.WHITE, font_size=20, anchor_x="center")
+
+        for button in self.button_list:
+            button.draw()
+
 class EnemySprite(arcade.Sprite):
     def update(self):
         super().update()
@@ -1383,20 +1517,20 @@ class Character(arcade.Sprite):
 
         self.player_class = self.getCharClass()
 
-        # (int(char_id), str(CURRENT_ACCT_ID), str(self.char_name), str(char_texture), str(self.char_class), int(char_level), int(char_health), int(char_mana), int(char_strength), int(char_stamina), int(char_intellect), int(char_agility), float(char_attack_crit_chance), float(char_spell_crit_chance), int(char_spell_power), int(char_attack_power), int(char_move_speed), int(curr_exp), int(curr_pvp_rank))
+        # (int(char_id), str(CURRENT_ACCT_ID), str(self.char_name), str(char_texture), str(self.char_class), int(char_level), int(char_strength), int(char_stamina), int(char_intellect), int(char_agility), int(char_move_speed), int(curr_exp), int(curr_pvp_rank), int(curr_round_num))
         self.player_stats = self.getCharStats()[0]
 
         self.level = self.player_stats[5]
 
-        self.player_max_health = self.player_stats[6]
-        self.player_current_health = self.player_max_health # start current health at the max health
-        self.player_max_mana = self.player_stats[7]
-        self.player_current_mana = self.player_max_mana
+        self.strength = self.player_stats[6]
+        self.stamina = self.player_stats[7]
+        self.intellect = self.player_stats[8]
+        self.agility = self.player_stats[9]
 
-        self.strength = self.player_stats[8]
-        self.stamina = self.player_stats[9]
-        self.intellect = self.player_stats[10]
-        self.agility = self.player_stats[11]
+        self.player_max_health = self.stamina * self.game_settings.STAMINA_HEALTH_MULTIPLIER
+        self.player_current_health = self.player_max_health # start current health at the max health
+        self.player_max_mana = self.intellect * self.game_settings.INTELLECT_MANA_MULTIPLIER
+        self.player_current_mana = self.player_max_mana
 
         self.attack_crit = 0.05 + self.agility * self.game_settings.AGILITY_CRIT_MULTIPLIER
         self.spell_crit = 0.05 + self.intellect * self.game_settings.INTELLECT_CRIT_MULTIPLIER
@@ -1404,7 +1538,7 @@ class Character(arcade.Sprite):
         self.attack_power = self.agility * self.game_settings.AGILITY_AP_MULTIPLIER + self.strength * self.game_settings.STRENGTH_AP_MULTIPLIER
         self.spell_power = self.intellect * self.game_settings.INTELLECT_SP_MULTIPLIER
 
-        self.current_exp = self.player_stats[17]
+        self.current_exp = self.player_stats[11]
 
     def update(self):
         super().update()
@@ -1417,6 +1551,12 @@ class Character(arcade.Sprite):
 
     def getCurrentHealth(self):
         return self.player_current_health
+
+    def getMaxMana(self):
+        return self.player_max_mana
+
+    def getCurrentMana(self):
+        return self.player_current_mana
 
     def takeDamage(self, dmg):
         self.player_current_health -= dmg

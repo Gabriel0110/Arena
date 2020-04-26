@@ -29,19 +29,14 @@ class Database:
                                         char_texture VARCHAR(100) NOT NULL,
                                         char_class VARCHAR(30) NOT NULL,
                                         char_level INTEGER NOT NULL,
-                                        char_health INTEGER NOT NULL,
-                                        char_mana INTEGER NOT NULL,
                                         char_strength INTEGER NOT NULL,
                                         char_stamina INTERGER NOT NULL,
                                         char_intellect INTEGER NOT NULL,
                                         char_agility INTEGER NOT NULL,
-                                        char_attack_crit_chance FLOAT NOT NULL,
-                                        char_spell_crit_chance FLOAT NOT NULL,
-                                        char_spell_power INTEGER NOT NULL,
-                                        char_attack_power INTEGER NOT NULL,
                                         char_move_speed FLOAT NOT NULL,
                                         curr_exp INTEGER NOT NULL,
-                                        curr_pvp_rank INTEGER NOT NULL
+                                        curr_pvp_rank INTEGER NOT NULL,
+                                        curr_round_num INTEGER NOT NULL
                                     ); """
 
         self.create_spells_table = """CREATE TABLE IF NOT EXISTS spells (
