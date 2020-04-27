@@ -1,4 +1,3 @@
-import Spending_Tracker
 import sqlite3
 from sqlite3 import Error
 import os

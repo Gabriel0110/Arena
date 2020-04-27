@@ -760,14 +760,6 @@ class PvpArena(arcade.View):
         # Begin rendering (will end automatically after method ends)
         arcade.start_render()
 
-        # Draw scoreboard text
-        # self.score_text = arcade.draw_text("SCORE: {}".format(str(self.score)), SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
-        # self.level_text = arcade.draw_text("Level: {}".format(str(self.level)), SCREEN_WIDTH - 175, SCREEN_HEIGHT - 35, arcade.color.BLACK, 18)
-        
-        # Sanity check to let you know that god mode is active when using it
-        #if self.GOD_MODE:
-            #self.godmode_active_text = arcade.draw_text("GOD MODE ACTIVE", SCREEN_WIDTH*0.02, SCREEN_HEIGHT - 35, arcade.color.BLACK, 20)
-
         self.all_sprites.draw()
 
 class OnslaughtPreGameLobby(arcade.View):
@@ -982,6 +974,8 @@ class Onslaught(arcade.View):
         self.total_enemy_count = 10 + CURRENT_ROUND*2
         self.enemies_killed = 0
 
+        self.bossSpawned = False
+
         self.player = player
         self.char_class = self.getCharClass()
         self.basic_attack_img = self.getBasicAttackImage()
@@ -997,7 +991,7 @@ class Onslaught(arcade.View):
         self.player_velocity = 10
 
         # FOR TESTING - set to "True" to not lose when hit by enemy.  Otherwise, KEEP "False"
-        self.GOD_MODE = True
+        self.GOD_MODE = False
 
         # Schedule enemy spawning every 2 seconds
         arcade.schedule(self.add_enemy, 2.0)
@@ -1151,7 +1145,7 @@ class Onslaught(arcade.View):
         if gamePaused:
             return
 
-        if self.current_enemy_count <= self.total_enemy_count:
+        if self.current_enemy_count < self.total_enemy_count:
             basic_enemy_health = 100 + CURRENT_ROUND*60
 
             # First, create the new enemy sprite
