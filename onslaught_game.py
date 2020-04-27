@@ -1041,10 +1041,10 @@ class Onslaught(arcade.View):
         arcade.set_background_color(arcade.color.GRAY)
 
     def on_update(self, delta_time: float):
-        global player, game, CURRENT_ROUND
+        global player, game, CURRENT_ROUND, gamePaused
         # If paused, don't update anything
-        #if arcade.paused:
-        #    return
+        if gamePaused:
+            return
 
         # Keep updating the player's current health and mana
         self.current_health = self.player.getCurrentHealth()
