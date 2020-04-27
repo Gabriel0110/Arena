@@ -962,8 +962,11 @@ class Onslaught(arcade.View):
         self.game_settings = GameSettings()
 
         # Set up the empty sprite lists
-        self.enemies_list = arcade.SpriteList()
+        self.basic_enemies_list = arcade.SpriteList()
+        self.caster_enemies_list = arcade.SpriteList()
+        self.boss_enemies_list = arcade.SpriteList()
         self.basic_attack_list = arcade.SpriteList()
+        self.caster_attack_list = arcade.SpriteList()
         #self.weapon_list = arcade.SpriteList()
         self.spell_slot_list = arcade.SpriteList()
         self.all_sprites = arcade.SpriteList()
@@ -971,7 +974,7 @@ class Onslaught(arcade.View):
         #self.all_sprites.append(self.weapon_list)
 
         self.current_enemy_count = 0
-        self.total_enemy_count = 10 + CURRENT_ROUND*2
+        self.total_enemy_count = 6 + CURRENT_ROUND*2
         self.enemies_killed = 0
 
         self.bossSpawned = False
@@ -993,8 +996,11 @@ class Onslaught(arcade.View):
         # FOR TESTING - set to "True" to not lose when hit by enemy.  Otherwise, KEEP "False"
         self.GOD_MODE = False
 
-        # Schedule enemy spawning every 2 seconds
-        arcade.schedule(self.add_enemy, 2.0)
+        # Schedule enemy spawning every 3 seconds
+        arcade.schedule(self.add_enemy, 3.0)
+
+        # Schedule to have caster enemies shoot if there are caster enemies alive
+        arcade.schedule(self.casterShoot, 2.5)
 
     def setup(self):
         # Set the background color
@@ -1063,7 +1069,7 @@ class Onslaught(arcade.View):
 
         # Did an enemy touch you? --- player can only be hit every 0.75 seconds after being hit before
         enemy_damage = 20 * (1.0 + (CURRENT_ROUND / 10))
-        if self.player.collides_with_list(self.enemies_list):
+        if self.player.collides_with_list(self.basic_enemies_list):
             if self.playerCanBeHit:
                 self.player.takeDamage(enemy_damage)
                 print("Enemy dealth {} damage.".format(enemy_damage))
@@ -1077,7 +1083,6 @@ class Onslaught(arcade.View):
             print("ROUND OVER - PLAYER HAS DIED!")
             self.roundSummary("Lost")
             self.player.player_current_health = self.player.getMaxHealth()
-            self.enemies_killed = 0
 
         # Killed all enemies in round?
         if self.enemies_killed >= self.total_enemy_count:
@@ -1085,11 +1090,14 @@ class Onslaught(arcade.View):
             print("ROUND OVER - ALL ENEMIES KILLED!")
             self.roundSummary("Won")
             self.player.player_current_health = self.player.getMaxHealth()
-            self.enemies_killed = 0
 
         # Have enemies follow the player
-        for enemy in self.enemies_list:
+        for enemy in self.basic_enemies_list:
             enemy.follow_sprite(self.player)
+
+        if self.bossSpawned:
+            for enemy in self.boss_enemies_list:
+                enemy.follow_sprite(self.player)
 
         # Update everything
         self.all_sprites.update()
@@ -1128,7 +1136,17 @@ class Onslaught(arcade.View):
         arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.mana_percent))/2), self.player.top+2, 69.7*self.mana_percent, 9.7, arcade.color.BLUE)
 
         # Draw enemy health bars
-        for enemy in self.enemies_list:
+        for enemy in self.basic_enemies_list:
+            arcade.draw_rectangle_outline(enemy.center_x, enemy.top+10, 70, 10, arcade.color.BLACK)
+            hp_percent = enemy.enemy_current_health / enemy.enemy_max_health
+            arcade.draw_rectangle_filled(enemy.center_x - ((69.7 - (69.7*hp_percent))/2), enemy.top+10, 69.7*hp_percent, 9.7, arcade.color.RED)
+
+        for enemy in self.caster_enemies_list:
+            arcade.draw_rectangle_outline(enemy.center_x, enemy.top+10, 70, 10, arcade.color.BLACK)
+            hp_percent = enemy.enemy_current_health / enemy.enemy_max_health
+            arcade.draw_rectangle_filled(enemy.center_x - ((69.7 - (69.7*hp_percent))/2), enemy.top+10, 69.7*hp_percent, 9.7, arcade.color.RED)
+
+        for enemy in self.boss_enemies_list:
             arcade.draw_rectangle_outline(enemy.center_x, enemy.top+10, 70, 10, arcade.color.BLACK)
             hp_percent = enemy.enemy_current_health / enemy.enemy_max_health
             arcade.draw_rectangle_filled(enemy.center_x - ((69.7 - (69.7*hp_percent))/2), enemy.top+10, 69.7*hp_percent, 9.7, arcade.color.RED)
@@ -1139,6 +1157,43 @@ class Onslaught(arcade.View):
         self.playerCanBeHit = True
         arcade.unschedule(self.setPlayerHit)
 
+    def casterShoot(self, delta_time: float):
+        import math
+
+        if len(self.caster_enemies_list) > 0:
+            for enemy in self.caster_enemies_list:
+                attack_speed = 15
+
+                # Position the start at the enemy's current location
+                start_x = enemy.center_x
+                start_y = enemy.center_y
+
+                # Get the destination location for the bullet
+                dest_x = self.player.center_x
+                dest_y = self.player.center_y
+
+                # Do math to calculate how to get the bullet to the destination.
+                # Calculation the angle in radians between the start points
+                # and end points. This is the angle the bullet will travel.
+                x_diff = dest_x - start_x
+                y_diff = dest_y - start_y
+                angle = math.atan2(y_diff, x_diff)
+
+                bolt = CasterEnemyAttack("images/caster_bolt.png", 0.8)
+                bolt.center_x = start_x
+                bolt.center_y = start_y
+
+                # Angle the bullet sprite
+                bolt.angle = math.degrees(angle)
+
+                # Taking into account the angle, calculate our change_x
+                # and change_y. Velocity is how fast the bullet travels.
+                bolt.change_x = math.cos(angle) * attack_speed
+                bolt.change_y = math.sin(angle) * attack_speed
+
+                self.caster_attack_list.append(bolt)
+                self.all_sprites.append(bolt)
+
     def add_enemy(self, delta_time: float):
         global CURRENT_ROUND, gamePaused
         
@@ -1146,21 +1201,63 @@ class Onslaught(arcade.View):
             return
 
         if self.current_enemy_count < self.total_enemy_count:
+            if self.current_enemy_count % 5 == 0:
+                # Spawn caster enemy
+                caster_enemy_health = 150 + CURRENT_ROUND*60
+
+                # First, create the new enemy sprite
+                caster_enemy = EnemySprite("images/caster_sprite.png", 0.8)
+                caster_enemy.setup(caster_enemy_health) # SET'S ENEMY HEALTH
+
+                # Set its position to a random x position and y position
+                caster_enemy.top = random.randint(50, SCREEN_HEIGHT)
+                caster_enemy.left = random.randint(10, SCREEN_WIDTH - 10)
+
+                # INITIAL enemy velocity -- it changes once they see the player
+                caster_enemy.velocity = (0, 0)
+
+                # Add it to the enemies list and all_sprites list
+                self.caster_enemies_list.append(caster_enemy)
+                self.all_sprites.append(caster_enemy)
+                self.current_enemy_count += 1
+
+            if CURRENT_ROUND % 4 == 0 and self.bossSpawned == False:
+                self.bossSpawned = True
+                # Spawn a boss enemy
+                boss_enemy_health = 500 + CURRENT_ROUND*60
+
+                # First, create the new enemy sprite
+                boss_enemy = EnemySprite("images/boss_sprite.png", 1.3)
+                boss_enemy.setup(boss_enemy_health) # SET'S ENEMY HEALTH
+
+                # Set its position to a random x and y position
+                boss_enemy.top = random.randint(50, SCREEN_HEIGHT + 80)
+                boss_enemy.left = random.choice([random.randint(-80, -5), random.randint(SCREEN_WIDTH+5, SCREEN_WIDTH+80)])
+
+                # INITIAL enemy velocity -- it changes once they see the player
+                boss_enemy.velocity = (0, -1.5)
+
+                # Add it to the enemies list and all_sprites list
+                self.boss_enemies_list.append(boss_enemy)
+                self.all_sprites.append(boss_enemy)
+                self.current_enemy_count += 1
+            
+            # Now spawn basic enemy like normal
             basic_enemy_health = 100 + CURRENT_ROUND*60
 
             # First, create the new enemy sprite
             enemy = EnemySprite("images/enemy_sprite.png", 0.8)
             enemy.setup(basic_enemy_health) # SET'S ENEMY HEALTH
 
-            # Set its position to a random x position and off-screen at the top
+            # Set its position to a random x and y positon but off the screen
             enemy.top = random.randint(SCREEN_HEIGHT, SCREEN_HEIGHT + 80)
-            enemy.left = random.randint(10, SCREEN_WIDTH - 10)
+            enemy.left = random.choice([random.randint(-80, -5), random.randint(SCREEN_WIDTH+5, SCREEN_WIDTH+80)])
 
             # INITIAL enemy velocity -- it changes once they see the player
             enemy.velocity = (0, -2)
 
             # Add it to the enemies list and all_sprites list
-            self.enemies_list.append(enemy)
+            self.basic_enemies_list.append(enemy)
             self.all_sprites.append(enemy)
             self.current_enemy_count += 1
         else:
@@ -1172,7 +1269,7 @@ class Onslaught(arcade.View):
         # Will need to check for character levelup after each round, whether win or lose
         if result == "Won":
             # Give player stats necessary AND update curr_round_num in DB to +1
-            exp_earned = (40 * self.enemies_killed) + (CURRENT_ROUND * 100)
+            exp_earned = (40 * self.enemies_killed) + (CURRENT_ROUND * 100) + (300 if self.bossSpawned else 0)
             self.player.current_exp += exp_earned
             CURRENT_ROUND += 1
 
@@ -1275,7 +1372,7 @@ class Onslaught(arcade.View):
     def on_mouse_press(self, x, y, button, modifiers):
         import math
 
-        if self.char_class == "Assassin":
+        if self.char_class == "Assassin" or self.char_class == "Warrior" or self.char_class == "Void Stalker":
             if self.swingingWeapon == False:
                 self.swing_timer = 0
                 self.swingingWeapon = True
@@ -1489,10 +1586,31 @@ class BasicAttackSprite(arcade.Sprite):
         if self.center_y >= SCREEN_HEIGHT or self.center_x >= SCREEN_WIDTH or self.center_x <= 0 or self.center_y <= 0:
             self.remove_from_sprite_lists()
 
-        if self.collides_with_list(onslaught.enemies_list):
+        if self.collides_with_list(onslaught.basic_enemies_list):
             if onslaught.deleteAttack:
                 self.remove_from_sprite_lists()
                 onslaught.deleteAttack = False
+        elif self.collides_with_list(onslaught.caster_enemies_list):
+            if onslaught.deleteAttack:
+                self.remove_from_sprite_lists()
+                onslaught.deleteAttack = False
+        elif self.collides_with_list(onslaught.boss_enemies_list):
+            if onslaught.deleteAttack:
+                self.remove_from_sprite_lists()
+                onslaught.deleteAttack = False
+
+class CasterEnemyAttack(arcade.Sprite):
+    def update(self):
+        super().update()
+        global onslaught
+
+        if self.center_y >= SCREEN_HEIGHT or self.center_x >= SCREEN_WIDTH or self.center_x <= 0 or self.center_y <= 0:
+            self.remove_from_sprite_lists()
+
+        if self.collides_with_sprite(onslaught.player):
+                self.remove_from_sprite_lists()
+                enemy_damage = 20 * (1.0 + (CURRENT_ROUND / 10))
+                onslaught.player.takeDamage(enemy_damage)
 
 class WeaponSprite(arcade.Sprite):
     def update(self):
@@ -1502,7 +1620,7 @@ class WeaponSprite(arcade.Sprite):
         if onslaught.swingingWeapon == False:
             self.remove_from_sprite_lists()
 
-        #if self.collides_with_list(onslaught.enemies_list):
+        #if self.collides_with_list(onslaught.basic_enemies_list):
             #self.remove_from_sprite_lists()
 
 class Character(arcade.Sprite):
