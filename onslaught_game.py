@@ -1351,6 +1351,10 @@ class Onslaught(arcade.View):
             self.player.change_y = self.player_velocity
         elif key == arcade.key.S or key == arcade.key.DOWN:
             self.player.change_y = -self.player_velocity
+        elif key == arcade.key.E or key == arcade.key.KEY_1:
+            # CHECK IF PLAYER HAS THE REQUIRED MANA FOR SPELL BEFORE CASTING AND SUBTRACTING MANA
+            if self.current_mana >= self.max_mana*0.1:
+                self.player.loseMana(self.max_mana*0.1)
 
     def on_key_release(self, key: int, modifiers: int):
         if (
@@ -1654,6 +1658,8 @@ class Character(arcade.Sprite):
 
     def update(self):
         super().update()
+        if self.player_current_mana <= 0:
+            self.player_current_mana = 0
 
     def castSpell(self, spell):
         pass
@@ -1672,6 +1678,9 @@ class Character(arcade.Sprite):
 
     def takeDamage(self, dmg):
         self.player_current_health -= dmg
+
+    def loseMana(self, mana):
+        self.player_current_mana -= mana
 
     def basicDamage(self):
         if self.player_class == "Assassin":
