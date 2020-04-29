@@ -1384,6 +1384,11 @@ class Onslaught(arcade.View):
                 if self.current_mana >= self.max_mana*0.1:
                     self.player.loseMana(self.max_mana*0.1)
                     self.player.castSpell(spell)
+        elif key == arcade.key.R or key == arcade.key.KEY_2:
+            if len(self.player.spells) >= 2:
+                spell = self.player.spells[1]
+                if self.current_mana >= self.max_mana*0.1:
+                    self.player.castSpell(spell)
 
     def on_key_release(self, key: int, modifiers: int):
         if (
@@ -1694,6 +1699,7 @@ class SpellSprite(arcade.Sprite):
             self.remove_from_sprite_lists()
             enemy.movementAffected = True
             enemy.takeDamage(self.dmg)
+            print("Poison Shuriken dealt {} damage to an enemy.".format(self.dmg))
             if self.speedEffect != 0:
                 onslaught.enemy_velocity -= onslaught.enemy_velocity * self.speedEffect
                 arcade.schedule(self.resetEnemyVelocity, 3.0)
@@ -1701,11 +1707,13 @@ class SpellSprite(arcade.Sprite):
         for enemy in caster_enemy_hit_list:
             self.remove_from_sprite_lists()
             enemy.takeDamage(self.dmg)
+            print("Poison Shuriken dealt {} damage to an enemy.".format(self.dmg))
 
         for enemy in boss_enemy_hit_list:
             self.remove_from_sprite_lists()
             enemy.movementAffected = True
             enemy.takeDamage(self.dmg)
+            print("Poison Shuriken dealt {} damage to an enemy.".format(self.dmg))
             if self.speedEffect != 0:
                 onslaught.enemy_velocity -= onslaught.enemy_velocity * self.speedEffect
                 arcade.schedule(self.resetEnemyVelocity, 3.0)
@@ -1758,7 +1766,10 @@ class Character(arcade.Sprite):
     def castSpell(self, spell):
         global mouse_x, mouse_y
         if self.player_class == "Assassin":
-            AssassinSpells.poisonShuriken()
+            if "poison" in spell.lower():
+                AssassinSpells.poisonShuriken()
+            elif "ass" in spell.lower():
+                AssassinSpells.assassinate()
 
     def getMaxHealth(self):
         return self.player_max_health
@@ -1873,13 +1884,15 @@ class AssassinSpells:
         import math
         global onslaught, mouse_x, mouse_y
         """ Throw a poison-tipped shuriken in the direction of your mouse that deals 50 damage + 140% of attack power to any enemy hit and slows them by 50% for 3 seconds. """
+        dmg = 50 + (onslaught.player.attack_power * 1.4)
+
         #pos = pag.position() #queryMousePosition()
         #print(pos)
         x = mouse_x
         y = mouse_y
         
         shuriken = SpellSprite("images/shuriken.png", 0.1)
-        shuriken.setup("Poison Shuriken", 50 + (onslaught.player.attack_power * 1.4), 0.5)
+        shuriken.setup("Poison Shuriken", dmg, 0.5)
         shuriken_speed = 40
 
         start_x = onslaught.player.center_x
@@ -1901,9 +1914,50 @@ class AssassinSpells:
         onslaught.spell_sprite_list.append(shuriken)
         onslaught.all_sprites.append(shuriken)
 
-    def assassinate(self):
-        """ Step through the shadows to an enemy target and stab them in the back for 50 damage + 110% of attack power. Always a critical hit. Must have mouse cursor on an enemy to perform. """
-        pass
+    def assassinate():
+        import numpy as np
+        global onslaught, mouse_x, mouse_y
+        """ Step through the shadows to an enemy target and stab them in the back for 50 damage + 200% of attack power. Always a critical hit. Must have mouse cursor on an enemy to perform. """
+        dmg = 50 + (onslaught.player.attack_power * 2.0)
+
+        x = mouse_x
+        y = mouse_y
+
+        for enemy in onslaught.basic_enemies_list:
+            # get euclidean distance to enemy.center_x and see if it's close enough
+            dist = np.linalg.norm(np.array([x, y]) - np.array([enemy.center_x, enemy.center_y]))
+            if dist <= 40:
+                # TELEPORT PLAYER AND DEAL DAMAGE, AND STOP CHECKING ENEMIES
+                onslaught.player.loseMana(onslaught.max_mana*0.1)
+                onslaught.player.center_x = enemy.center_x
+                onslaught.player.center_y = enemy.center_y
+                enemy.takeDamage(dmg)
+                print("Assassinate dealt {} damage to an enemy.".format(dmg))
+                break
+
+        for enemy in onslaught.caster_enemies_list:
+            # get euclidean distance to enemy.center_x and see if it's close enough
+            dist = np.linalg.norm(np.array([x, y]) - np.array([enemy.center_x, enemy.center_y]))
+            if dist <= 40:
+                # TELEPORT PLAYER AND DEAL DAMAGE, AND STOP CHECKING ENEMIES
+                onslaught.player.loseMana(onslaught.max_mana*0.1)
+                onslaught.player.center_x = enemy.center_x
+                onslaught.player.center_y = enemy.center_y
+                enemy.takeDamage(dmg)
+                print("Assassinate dealt {} damage to an enemy.".format(dmg))
+                break
+
+        for enemy in onslaught.boss_enemies_list:
+            # get euclidean distance to enemy.center_x and see if it's close enough
+            dist = np.linalg.norm(np.array([x, y]) - np.array([enemy.center_x, enemy.center_y]))
+            if dist <= 40:
+                # TELEPORT PLAYER AND DEAL DAMAGE, AND STOP CHECKING ENEMIES
+                onslaught.player.loseMana(onslaught.max_mana*0.1)
+                onslaught.player.center_x = enemy.center_x
+                onslaught.player.center_y = enemy.center_y
+                enemy.takeDamage(dmg)
+                print("Assassinate dealt {} damage to an enemy.".format(dmg))
+                break
 
     def vanish(self):
         """ Vanish into the darkness and become hidden from your enemies for 3 seconds. """
