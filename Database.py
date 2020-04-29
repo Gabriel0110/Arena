@@ -44,7 +44,8 @@ class Database:
                                         spell_desc VARCHAR(256) NOT NULL,
                                         spell_mana_cost INTEGER NOT NULL,
                                         spell_hasDamage BOOLEAN NOT NULL,
-                                        spell_damage INTEGER
+                                        spell_damage INTEGER,
+                                        spell_cooldown INTEGER NOT NULL
                                     ); """
 
         self.create_assassin_spells_unlocked_table = """CREATE TABLE IF NOT EXISTS assassin_spells_unlocked (

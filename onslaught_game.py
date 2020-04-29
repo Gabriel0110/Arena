@@ -608,6 +608,9 @@ class TalentsAndSpells(arcade.View):
         self.prev_view = prev_view
 
         self.theme = getButtonThemes()
+
+        # Load all learned spells that the character has as buttons (check [class]_spells_table for True booleans on spells, then pull their names)
+
         self.button_list.append(BackButton(self.prev_view, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.1, 100, 50, theme=self.theme))
 
     def on_show(self):
@@ -904,6 +907,13 @@ class OnslaughtPreGameLobby(arcade.View):
         # Display current round
         arcade.draw_text("Current Round: {}".format(self.curr_round_number), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.96, arcade.color.WHITE, 30, bold=True, anchor_x="center")
 
+        # Add spell names to UI slots
+        centers = [SCREEN_WIDTH*0.425, SCREEN_WIDTH*0.475, SCREEN_WIDTH*0.525, SCREEN_WIDTH*0.575, SCREEN_WIDTH*0.675]
+        num_spells = len(self.player.spells)
+        if num_spells > 0:
+            for i in range(num_spells):
+                arcade.draw_text(self.player.spells[i], centers[i], SCREEN_HEIGHT*0.08, arcade.color.WHITE, 14, bold=True, anchor_x="center")
+
         for button in self.button_list:
             button.draw()
 
@@ -1150,6 +1160,13 @@ class Onslaught(arcade.View):
             arcade.draw_rectangle_outline(enemy.center_x, enemy.top+10, 70, 10, arcade.color.BLACK)
             hp_percent = enemy.enemy_current_health / enemy.enemy_max_health
             arcade.draw_rectangle_filled(enemy.center_x - ((69.7 - (69.7*hp_percent))/2), enemy.top+10, 69.7*hp_percent, 9.7, arcade.color.RED)
+
+        # Add spell names to UI slots
+        centers = [SCREEN_WIDTH*0.425, SCREEN_WIDTH*0.475, SCREEN_WIDTH*0.525, SCREEN_WIDTH*0.575, SCREEN_WIDTH*0.675]
+        num_spells = len(self.player.spells)
+        if num_spells > 0:
+            for i in range(num_spells):
+                arcade.draw_text(self.player.spells[i], centers[i], SCREEN_HEIGHT*0.08, arcade.color.WHITE, 14, bold=True, anchor_x="center")
 
         self.all_sprites.draw()
 
@@ -1656,6 +1673,8 @@ class Character(arcade.Sprite):
 
         self.current_exp = self.player_stats[11]
 
+        self.spells = self.getCharSpells() # list of spell names for the class
+
     def update(self):
         super().update()
         if self.player_current_mana <= 0:
@@ -1722,6 +1741,54 @@ class Character(arcade.Sprite):
             print(e)
             exit()
         return char_class[0][0]
+
+    def getCharSpells(self):
+        spells = []
+        if self.level >= 2:
+            # Insert level 2 spell name
+            if self.player_class == "Assassin":
+                spells.append("Poison\nShuriken")
+            elif self.player_class == "Mage":
+                pass
+            elif self.player_class == "Warrior":
+                pass
+            elif self.player_class == "Void Stalker":
+                pass
+        
+        if self.level >= 4:
+            # Insert level 4 spell name
+            if self.player_class == "Assassin":
+                spells.append("Assassinate")
+            elif self.player_class == "Mage":
+                pass
+            elif self.player_class == "Warrior":
+                pass
+            elif self.player_class == "Void Stalker":
+                pass
+
+        if self.level >= 6:
+            # Insert level 6 spell name
+            if self.player_class == "Assassin":
+                spells.append("Vanish")
+            elif self.player_class == "Mage":
+                pass
+            elif self.player_class == "Warrior":
+                pass
+            elif self.player_class == "Void Stalker":
+                pass
+
+        if self.level >= 8:
+            # Insert level 8 spell name
+            if self.player_class == "Assassin":
+                spells.append("Master\nof\nDeception")
+            elif self.player_class == "Mage":
+                pass
+            elif self.player_class == "Warrior":
+                pass
+            elif self.player_class == "Void Stalker":
+                pass
+
+        return spells
 
 class LoginWindow(Frame):
     def __init__(self, master=None): 
