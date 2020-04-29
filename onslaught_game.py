@@ -72,7 +72,7 @@ class GameSettings():
                 self.level_exp_requirements[level] = level_req
             else:
                 self.level_exp_requirements[level] = level_req
-            level_req *= 2
+            level_req *= 1.75
 
 def createAlert(text, title, button):
     pyautogui.alert(text=text, title=title, button=button)
@@ -1187,38 +1187,39 @@ class Onslaught(arcade.View):
         import math
 
         if len(self.caster_enemies_list) > 0:
-            for enemy in self.caster_enemies_list:
-                attack_speed = 15
+            if self.player.isVisible == True:
+                for enemy in self.caster_enemies_list:
+                    attack_speed = 15
 
-                # Position the start at the enemy's current location
-                start_x = enemy.center_x
-                start_y = enemy.center_y
+                    # Position the start at the enemy's current location
+                    start_x = enemy.center_x
+                    start_y = enemy.center_y
 
-                # Get the destination location for the bullet
-                dest_x = self.player.center_x
-                dest_y = self.player.center_y
+                    # Get the destination location for the bullet
+                    dest_x = self.player.center_x
+                    dest_y = self.player.center_y
 
-                # Do math to calculate how to get the bullet to the destination.
-                # Calculation the angle in radians between the start points
-                # and end points. This is the angle the bullet will travel.
-                x_diff = dest_x - start_x
-                y_diff = dest_y - start_y
-                angle = math.atan2(y_diff, x_diff)
+                    # Do math to calculate how to get the bullet to the destination.
+                    # Calculation the angle in radians between the start points
+                    # and end points. This is the angle the bullet will travel.
+                    x_diff = dest_x - start_x
+                    y_diff = dest_y - start_y
+                    angle = math.atan2(y_diff, x_diff)
 
-                bolt = CasterEnemyAttack("images/caster_bolt.png", 0.8)
-                bolt.center_x = start_x
-                bolt.center_y = start_y
+                    bolt = CasterEnemyAttack("images/caster_bolt.png", 0.8)
+                    bolt.center_x = start_x
+                    bolt.center_y = start_y
 
-                # Angle the bullet sprite
-                bolt.angle = math.degrees(angle)
+                    # Angle the bullet sprite
+                    bolt.angle = math.degrees(angle)
 
-                # Taking into account the angle, calculate our change_x
-                # and change_y. Velocity is how fast the bullet travels.
-                bolt.change_x = math.cos(angle) * attack_speed
-                bolt.change_y = math.sin(angle) * attack_speed
+                    # Taking into account the angle, calculate our change_x
+                    # and change_y. Velocity is how fast the bullet travels.
+                    bolt.change_x = math.cos(angle) * attack_speed
+                    bolt.change_y = math.sin(angle) * attack_speed
 
-                self.caster_attack_list.append(bolt)
-                self.all_sprites.append(bolt)
+                    self.caster_attack_list.append(bolt)
+                    self.all_sprites.append(bolt)
 
     def add_enemy(self, delta_time: float):
         global CURRENT_ROUND, gamePaused
@@ -1381,13 +1382,19 @@ class Onslaught(arcade.View):
             # CHECK IF PLAYER HAS THE REQUIRED MANA FOR SPELL BEFORE CASTING AND SUBTRACTING MANA
             if len(self.player.spells) >= 1:
                 spell = self.player.spells[0]
-                if self.current_mana >= self.max_mana*0.1:
+                if self.current_mana >= self.max_mana*0.05:
                     self.player.loseMana(self.max_mana*0.1)
                     self.player.castSpell(spell)
         elif key == arcade.key.R or key == arcade.key.KEY_2:
             if len(self.player.spells) >= 2:
                 spell = self.player.spells[1]
                 if self.current_mana >= self.max_mana*0.1:
+                    self.player.castSpell(spell)
+        elif key == arcade.key.F or key == arcade.key.KEY_3:
+            if len(self.player.spells) >= 3:
+                spell = self.player.spells[2]
+                if self.current_mana >= self.max_mana*0.1:
+                    self.player.loseMana(self.max_mana*0.1)
                     self.player.castSpell(spell)
 
     def on_key_release(self, key: int, modifiers: int):
@@ -1624,11 +1631,14 @@ class EnemySprite(arcade.Sprite):
 
             # Taking into account the angle, calculate our change_x
             # and change_y. Velocity is how fast the bullet travels.
-            if self.movementAffected == False:
-                self.velocity = (math.cos(angle) * 2.5, math.sin(angle) * 2.5)
+            if onslaught.player.isVisible == True:
+                if self.movementAffected == False:
+                    self.velocity = (math.cos(angle) * 2.5, math.sin(angle) * 2.5)
+                else:
+                    self.velocity = (math.cos(angle) * onslaught.enemy_velocity, math.sin(angle) * onslaught.enemy_velocity)
+                    arcade.schedule(self.unsetMovementAffected, 3.0)
             else:
-                self.velocity = (math.cos(angle) * onslaught.enemy_velocity, math.sin(angle) * onslaught.enemy_velocity)
-                arcade.schedule(self.unsetMovementAffected, 3.0)
+                self.velocity = (0, 0)
             #self.change_x = math.cos(angle) * 1.5
             #self.change_y = math.sin(angle) * 1.5
 
@@ -1756,6 +1766,8 @@ class Character(arcade.Sprite):
 
         self.current_exp = self.player_stats[11]
 
+        self.isVisible = True # used to check if player can be seen
+
         self.spells = self.getCharSpells() # list of spell names for the class
 
     def update(self):
@@ -1770,6 +1782,8 @@ class Character(arcade.Sprite):
                 AssassinSpells.poisonShuriken()
             elif "ass" in spell.lower():
                 AssassinSpells.assassinate()
+            elif "vanish" in spell.lower():
+                AssassinSpells.vanish()
 
     def getMaxHealth(self):
         return self.player_max_health
@@ -1880,11 +1894,21 @@ class Character(arcade.Sprite):
 
 
 class AssassinSpells:
+    def endInvisibility(self):
+        global onslaught
+        onslaught.player.isVisible = True
+        arcade.set_background_color(arcade.color.GRAY)
+        arcade.unschedule(AssassinSpells.endInvisibility)
+
     def poisonShuriken():
         import math
         global onslaught, mouse_x, mouse_y
         """ Throw a poison-tipped shuriken in the direction of your mouse that deals 50 damage + 140% of attack power to any enemy hit and slows them by 50% for 3 seconds. """
         dmg = 50 + (onslaught.player.attack_power * 1.4)
+
+        # Crit?
+        if random.random() <= onslaught.player.attack_crit:
+            dmg *= 1.5
 
         #pos = pag.position() #queryMousePosition()
         #print(pos)
@@ -1919,6 +1943,12 @@ class AssassinSpells:
         global onslaught, mouse_x, mouse_y
         """ Step through the shadows to an enemy target and stab them in the back for 50 damage + 200% of attack power. Always a critical hit. Must have mouse cursor on an enemy to perform. """
         dmg = 50 + (onslaught.player.attack_power * 2.0)
+        crit = False
+
+        # Crit?
+        if random.random() <= onslaught.player.attack_crit:
+            dmg *= 1.5
+            crit = True
 
         x = mouse_x
         y = mouse_y
@@ -1932,7 +1962,7 @@ class AssassinSpells:
                 onslaught.player.center_x = enemy.center_x
                 onslaught.player.center_y = enemy.center_y
                 enemy.takeDamage(dmg)
-                print("Assassinate dealt {} damage to an enemy.".format(dmg))
+                print("Assassinate {} {} damage to an enemy.".format("dealt" if crit == False else "CRIT", dmg))
                 break
 
         for enemy in onslaught.caster_enemies_list:
@@ -1944,7 +1974,7 @@ class AssassinSpells:
                 onslaught.player.center_x = enemy.center_x
                 onslaught.player.center_y = enemy.center_y
                 enemy.takeDamage(dmg)
-                print("Assassinate dealt {} damage to an enemy.".format(dmg))
+                print("Assassinate {} {} damage to an enemy.".format("dealt" if crit == False else "CRIT", dmg))
                 break
 
         for enemy in onslaught.boss_enemies_list:
@@ -1956,17 +1986,19 @@ class AssassinSpells:
                 onslaught.player.center_x = enemy.center_x
                 onslaught.player.center_y = enemy.center_y
                 enemy.takeDamage(dmg)
-                print("Assassinate dealt {} damage to an enemy.".format(dmg))
+                print("Assassinate {} {} damage to an enemy.".format("dealt" if crit == False else "CRIT", dmg))
                 break
 
-    def vanish(self):
+    def vanish():
+        global onslaught
         """ Vanish into the darkness and become hidden from your enemies for 3 seconds. """
-        pass
+        onslaught.player.isVisible = False
+        arcade.set_background_color(arcade.color.BLACK)
+        arcade.schedule(AssassinSpells.endInvisibility, 3.0)
 
     def masterOfDeception(self):
         """ You are a master of deception. Summon 3 clones of your self that will act as you do, mimicking your actions (without damage) and confusing your enemies. """
         pass
-
 
 class LoginWindow(Frame):
     def __init__(self, master=None): 
