@@ -1021,6 +1021,9 @@ class Onslaught(arcade.View):
         # Schedule to have caster enemies shoot if there are caster enemies alive
         arcade.schedule(self.casterShoot, 2.5)
 
+        # Mana regeneration scheduler
+        arcade.schedule(self.regenMana, 2.5)
+
     def setup(self):
         # Set the background color
         arcade.set_background_color(arcade.color.GRAY)
@@ -1221,6 +1224,13 @@ class Onslaught(arcade.View):
                     self.caster_attack_list.append(bolt)
                     self.all_sprites.append(bolt)
 
+    def regenMana(self, delta_time: float):
+        if self.player.getCurrentMana() < self.player.getMaxMana():
+            self.player.player_current_mana += self.player.player_max_mana*0.05
+
+        if self.player.getCurrentMana() > self.player.getMaxMana():
+                self.player.player_current_mana = self.player.player_max_mana
+
     def add_enemy(self, delta_time: float):
         global CURRENT_ROUND, gamePaused
         
@@ -1383,7 +1393,7 @@ class Onslaught(arcade.View):
             if len(self.player.spells) >= 1:
                 spell = self.player.spells[0]
                 if self.current_mana >= self.max_mana*0.05:
-                    self.player.loseMana(self.max_mana*0.1)
+                    self.player.loseMana(self.max_mana*0.05)
                     self.player.castSpell(spell)
         elif key == arcade.key.R or key == arcade.key.KEY_2:
             if len(self.player.spells) >= 2:
