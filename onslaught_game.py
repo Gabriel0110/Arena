@@ -10,6 +10,7 @@ from sqlite3 import Error
 import os
 import pyautogui
 from datetime import datetime
+import Spells
 
 SCREEN_WIDTH = round(pyautogui.size()[0]*0.8)
 SCREEN_HEIGHT = round(pyautogui.size()[1]*0.8)
@@ -39,6 +40,10 @@ CURRENT_CHAR = None
 CURRENT_ROUND = 0
 
 player = None # holds the single player character sprite when created
+
+# Cursor position
+mouse_x = 0
+mouse_y = 0
 
 class GameSettings():
     def __init__(self):
@@ -978,6 +983,7 @@ class Onslaught(arcade.View):
         self.basic_attack_list = arcade.SpriteList()
         self.caster_attack_list = arcade.SpriteList()
         #self.weapon_list = arcade.SpriteList()
+        self.spell_sprite_list = arcade.SpriteList()
         self.spell_slot_list = arcade.SpriteList()
         self.all_sprites = arcade.SpriteList()
 
@@ -1002,6 +1008,9 @@ class Onslaught(arcade.View):
         self.playerCanBeHit = True
 
         self.player_velocity = 10
+        self.enemy_velocity = 2.5 # used in EnemySprite follow_sprite() method
+        self.basic_enemy_velocity = (0, -2)
+        self.boss_enemy_velocity = (0, -1.5)
 
         # FOR TESTING - set to "True" to not lose when hit by enemy.  Otherwise, KEEP "False"
         self.GOD_MODE = False
@@ -1370,8 +1379,11 @@ class Onslaught(arcade.View):
             self.player.change_y = -self.player_velocity
         elif key == arcade.key.E or key == arcade.key.KEY_1:
             # CHECK IF PLAYER HAS THE REQUIRED MANA FOR SPELL BEFORE CASTING AND SUBTRACTING MANA
-            if self.current_mana >= self.max_mana*0.1:
-                self.player.loseMana(self.max_mana*0.1)
+            if len(self.player.spells) >= 1:
+                spell = self.player.spells[0]
+                if self.current_mana >= self.max_mana*0.1:
+                    self.player.loseMana(self.max_mana*0.1)
+                    self.player.castSpell(spell)
 
     def on_key_release(self, key: int, modifiers: int):
         if (
@@ -1480,6 +1492,11 @@ class Onslaught(arcade.View):
             self.basic_attack_list.append(basic_attack)
             self.all_sprites.append(basic_attack)
 
+    def on_mouse_motion(self, x, y, dx, dy):
+        global mouse_x, mouse_y
+        mouse_x = x
+        mouse_y = y
+
     def getCharClass(self):
         global CURRENT_CHAR
         c = db.conn.cursor()
@@ -1563,6 +1580,8 @@ class EnemySprite(arcade.Sprite):
             else:
                 onslaught.enemyHit = False
 
+        # Need a check if collides with spell, but have to determine how to know what spell to know how much damage to take, etc
+
         if self.enemy_current_health <= 0:
             self.remove_from_sprite_lists()
             onslaught.enemies_killed += 1
@@ -1570,8 +1589,13 @@ class EnemySprite(arcade.Sprite):
     def setup(self, health):
         self.enemy_max_health = health
         self.enemy_current_health = self.enemy_max_health
+        self.movementAffected = False
+
+    def takeDamage(self, dmg):
+        self.enemy_current_health -= dmg
 
     def follow_sprite(self, player_sprite):
+        global onslaught
         import math
         self.center_x += self.change_x
         self.center_y += self.change_y
@@ -1595,9 +1619,17 @@ class EnemySprite(arcade.Sprite):
 
             # Taking into account the angle, calculate our change_x
             # and change_y. Velocity is how fast the bullet travels.
-            self.velocity = (math.cos(angle) * 2.5, math.sin(angle) * 2.5)
+            if self.movementAffected == False:
+                self.velocity = (math.cos(angle) * 2.5, math.sin(angle) * 2.5)
+            else:
+                self.velocity = (math.cos(angle) * onslaught.enemy_velocity, math.sin(angle) * onslaught.enemy_velocity)
+                arcade.schedule(self.unsetMovementAffected, 3.0)
             #self.change_x = math.cos(angle) * 1.5
             #self.change_y = math.sin(angle) * 1.5
+
+    def unsetMovementAffected(self, delta_time: float):
+        self.movementAffected = False
+        arcade.unschedule(self.unsetMovementAffected)
 
 class BasicAttackSprite(arcade.Sprite):
     def update(self):
@@ -1644,6 +1676,49 @@ class WeaponSprite(arcade.Sprite):
         #if self.collides_with_list(onslaught.basic_enemies_list):
             #self.remove_from_sprite_lists()
 
+class SpellSprite(arcade.Sprite):
+    def update(self):
+        super().update()
+        global onslaught
+
+        if self.center_y >= SCREEN_HEIGHT or self.center_x >= SCREEN_WIDTH or self.center_x <= 0 or self.center_y <= 0:
+            self.remove_from_sprite_lists()
+
+        # Generate a list of all sprites that collided with the spell.
+        basic_enemy_hit_list = arcade.check_for_collision_with_list(self, onslaught.basic_enemies_list)
+        caster_enemy_hit_list = arcade.check_for_collision_with_list(self, onslaught.caster_enemies_list)
+        boss_enemy_hit_list = arcade.check_for_collision_with_list(self, onslaught.boss_enemies_list)
+
+        # Loop through each colliding sprite, remove it, and add to the score.
+        for enemy in basic_enemy_hit_list:
+            self.remove_from_sprite_lists()
+            enemy.movementAffected = True
+            enemy.takeDamage(self.dmg)
+            if self.speedEffect != 0:
+                onslaught.enemy_velocity -= onslaught.enemy_velocity * self.speedEffect
+                arcade.schedule(self.resetEnemyVelocity, 3.0)
+
+        for enemy in caster_enemy_hit_list:
+            self.remove_from_sprite_lists()
+            enemy.takeDamage(self.dmg)
+
+        for enemy in boss_enemy_hit_list:
+            self.remove_from_sprite_lists()
+            enemy.movementAffected = True
+            enemy.takeDamage(self.dmg)
+            if self.speedEffect != 0:
+                onslaught.enemy_velocity -= onslaught.enemy_velocity * self.speedEffect
+                arcade.schedule(self.resetEnemyVelocity, 3.0)
+
+    def setup(self, name, dmg, speedEffect):
+        self.name = name
+        self.dmg = dmg
+        self.speedEffect = speedEffect
+
+    def resetEnemyVelocity(self, delta_time: float):
+        onslaught.enemy_velocity = 2.5
+        arcade.unschedule(self.resetEnemyVelocity)
+
 class Character(arcade.Sprite):
     def setup(self):
         self.game_settings = GameSettings()
@@ -1681,7 +1756,9 @@ class Character(arcade.Sprite):
             self.player_current_mana = 0
 
     def castSpell(self, spell):
-        pass
+        global mouse_x, mouse_y
+        if self.player_class == "Assassin":
+            AssassinSpells.poisonShuriken()
 
     def getMaxHealth(self):
         return self.player_max_health
@@ -1789,6 +1866,53 @@ class Character(arcade.Sprite):
                 pass
 
         return spells
+
+
+class AssassinSpells:
+    def poisonShuriken():
+        import math
+        global onslaught, mouse_x, mouse_y
+        """ Throw a poison-tipped shuriken in the direction of your mouse that deals 50 damage + 140% of attack power to any enemy hit and slows them by 50% for 3 seconds. """
+        #pos = pag.position() #queryMousePosition()
+        #print(pos)
+        x = mouse_x
+        y = mouse_y
+        
+        shuriken = SpellSprite("images/shuriken.png", 0.1)
+        shuriken.setup("Poison Shuriken", 50 + (onslaught.player.attack_power * 1.4), 0.5)
+        shuriken_speed = 40
+
+        start_x = onslaught.player.center_x
+        start_y = onslaught.player.center_y
+        shuriken.center_x = start_x
+        shuriken.center_y = start_y
+
+        dest_x = x
+        dest_y = y
+
+        x_diff = dest_x - start_x
+        y_diff = dest_y - start_y
+        angle = math.atan2(y_diff, x_diff)
+
+        shuriken.angle = math.degrees(angle)
+        shuriken.change_x = math.cos(angle) * shuriken_speed
+        shuriken.change_y = math.sin(angle) * shuriken_speed
+
+        onslaught.spell_sprite_list.append(shuriken)
+        onslaught.all_sprites.append(shuriken)
+
+    def assassinate(self):
+        """ Step through the shadows to an enemy target and stab them in the back for 50 damage + 110% of attack power. Always a critical hit. Must have mouse cursor on an enemy to perform. """
+        pass
+
+    def vanish(self):
+        """ Vanish into the darkness and become hidden from your enemies for 3 seconds. """
+        pass
+
+    def masterOfDeception(self):
+        """ You are a master of deception. Summon 3 clones of your self that will act as you do, mimicking your actions (without damage) and confusing your enemies. """
+        pass
+
 
 class LoginWindow(Frame):
     def __init__(self, master=None): 

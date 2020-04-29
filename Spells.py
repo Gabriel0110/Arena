@@ -1,7 +1,50 @@
+import onslaught_game as OG
+import math
+
+
 class AssassinSpells:
     def poisonShuriken(self):
         """ Throw a poison-tipped shuriken in the direction of your mouse that deals 50 damage + 110% of attack power to any enemy hit and slows them by 30% for 3 seconds. """
-        pass
+        #pos = pag.position() #queryMousePosition()
+        #print(pos)
+        x = OG.mouse_x
+        y = OG.mouse_y
+        
+        shuriken = OG.SpellSprite("images/shuriken.png", 0.5)
+        shuriken_speed = 15
+
+        # Position the bullet at the player's current location
+        start_x = OG.onslaught.player.center_x
+        start_y = OG.onslaught.player.center_y
+        shuriken.center_x = start_x
+        shuriken.center_y = start_y
+
+        # Get from the mouse the destination location for the bullet
+        # IMPORTANT! If you have a scrolling screen, you will also need
+        # to add in self.view_bottom and self.view_left.
+        dest_x = x
+        dest_y = y
+
+        # Do math to calculate how to get the bullet to the destination.
+        # Calculation the angle in radians between the start points
+        # and end points. This is the angle the bullet will travel.
+        x_diff = dest_x - start_x
+        y_diff = dest_y - start_y
+        angle = math.atan2(y_diff, x_diff)
+
+        # Angle the bullet sprite so it doesn't look like it is flying
+        # sideways.
+        shuriken.angle = math.degrees(angle)
+        #print(f"Bullet angle: {basic_attack.angle:.2f}")
+
+        # Taking into account the angle, calculate our change_x
+        # and change_y. Velocity is how fast the bullet travels.
+        shuriken.change_x = math.cos(angle) * shuriken_speed
+        shuriken.change_y = math.sin(angle) * shuriken_speed
+
+        # Add the bullet to the appropriate lists
+        OG.onslaught.basic_attack_list.append(shuriken)
+        OG.onslaught.ll_sprites.append(shuriken)
 
     def assassinate(self):
         """ Step through the shadows to an enemy target and stab them in the back for 50 damage + 110% of attack power. Always a critical hit. Must have mouse cursor on an enemy to perform. """
