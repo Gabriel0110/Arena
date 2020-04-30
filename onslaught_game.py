@@ -917,7 +917,7 @@ class OnslaughtPreGameLobby(arcade.View):
         num_spells = len(self.player.spells)
         if num_spells > 0:
             for i in range(num_spells):
-                arcade.draw_text(self.player.spells[i], centers[i], SCREEN_HEIGHT*0.08, arcade.color.WHITE, 14, bold=True, anchor_x="center")
+                arcade.draw_text(self.player.spells[i], centers[i], SCREEN_HEIGHT*0.08, arcade.color.BLACK, 14, bold=True, anchor_x="center")
 
         for button in self.button_list:
             button.draw()
@@ -1012,6 +1012,11 @@ class Onslaught(arcade.View):
         self.basic_enemy_velocity = (0, -2)
         self.boss_enemy_velocity = (0, -1.5)
 
+        self.spell1_cooldown = 0
+        self.spell2_cooldown = 0
+        self.spell3_cooldown = 0
+        self.spell4_cooldown = 0
+
         # FOR TESTING - set to "True" to not lose when hit by enemy.  Otherwise, KEEP "False"
         self.GOD_MODE = False
 
@@ -1092,7 +1097,7 @@ class Onslaught(arcade.View):
         # Did an enemy touch you? --- player can only be hit every 0.75 seconds after being hit before
         enemy_damage = 20 * (1.0 + (CURRENT_ROUND / 10))
         if self.player.collides_with_list(self.basic_enemies_list):
-            if self.playerCanBeHit:
+            if self.playerCanBeHit == True:
                 self.player.takeDamage(enemy_damage)
                 print("Enemy dealth {} damage.".format(enemy_damage))
                 self.playerCanBeHit = False
@@ -1178,7 +1183,24 @@ class Onslaught(arcade.View):
         num_spells = len(self.player.spells)
         if num_spells > 0:
             for i in range(num_spells):
-                arcade.draw_text(self.player.spells[i], centers[i], SCREEN_HEIGHT*0.08, arcade.color.WHITE, 14, bold=True, anchor_x="center")
+                arcade.draw_text(self.player.spells[i], centers[i], SCREEN_HEIGHT*0.08, arcade.color.BLACK, 14, bold=True, anchor_x="center")
+
+        # Add spell & trinket cooldown timers if they are on cooldown
+        if self.spell1_cooldown > 0:
+            arcade.draw_text("X", SCREEN_WIDTH*0.425, SCREEN_HEIGHT*0.06, arcade.color.BLACK, 48, bold=True, anchor_x="center")
+            arcade.draw_text(str(self.spell1_cooldown), SCREEN_WIDTH*0.425, SCREEN_HEIGHT*0.015, arcade.color.BLACK, 25, bold=True, anchor_x="center")
+        if self.spell2_cooldown > 0:
+            arcade.draw_text("X", SCREEN_WIDTH*0.475, SCREEN_HEIGHT*0.06, arcade.color.BLACK, 48, bold=True, anchor_x="center")
+            arcade.draw_text(str(self.spell2_cooldown), SCREEN_WIDTH*0.475, SCREEN_HEIGHT*0.015, arcade.color.BLACK, 25, bold=True, anchor_x="center")
+        if self.spell3_cooldown > 0:
+            arcade.draw_text("X", SCREEN_WIDTH*0.525, SCREEN_HEIGHT*0.06, arcade.color.BLACK, 48, bold=True, anchor_x="center")
+            arcade.draw_text(str(self.spell3_cooldown), SCREEN_WIDTH*0.525, SCREEN_HEIGHT*0.015, arcade.color.BLACK, 25, bold=True, anchor_x="center")
+        if self.spell4_cooldown > 0:
+            arcade.draw_text("X", SCREEN_WIDTH*0.575, SCREEN_HEIGHT*0.06, arcade.color.BLACK, 48, bold=True, anchor_x="center")
+            arcade.draw_text(str(self.spell4_cooldown), SCREEN_WIDTH*0.575, SCREEN_HEIGHT*0.015, arcade.color.BLACK, 25, bold=True, anchor_x="center")
+        #if self.trinket_cooldown > 0:
+        #    arcade.draw_text(self.trinket_cooldown, SCREEN_WIDTH*0.675, SCREEN_HEIGHT*0.08, arcade.color.BLACK, 14, bold=True, anchor_x="center")
+
 
         self.all_sprites.draw()
 
@@ -1391,21 +1413,28 @@ class Onslaught(arcade.View):
         elif key == arcade.key.E or key == arcade.key.KEY_1:
             # CHECK IF PLAYER HAS THE REQUIRED MANA FOR SPELL BEFORE CASTING AND SUBTRACTING MANA
             if len(self.player.spells) >= 1:
-                spell = self.player.spells[0]
-                if self.current_mana >= self.max_mana*0.05:
-                    self.player.loseMana(self.max_mana*0.05)
-                    self.player.castSpell(spell)
+                if self.spell1_cooldown == 0:
+                    spell = self.player.spells[0]
+                    if self.current_mana >= self.max_mana*0.05:
+                        self.player.loseMana(self.max_mana*0.05)
+                        self.player.castSpell(spell)
+                        self.spell1_cooldown = 6
+                        arcade.schedule(self.spell1Countdown, 1.0)
         elif key == arcade.key.R or key == arcade.key.KEY_2:
             if len(self.player.spells) >= 2:
-                spell = self.player.spells[1]
-                if self.current_mana >= self.max_mana*0.1:
-                    self.player.castSpell(spell)
+                if self.spell2_cooldown == 0:
+                    spell = self.player.spells[1]
+                    if self.current_mana >= self.max_mana*0.1:
+                        self.player.castSpell(spell)
         elif key == arcade.key.F or key == arcade.key.KEY_3:
             if len(self.player.spells) >= 3:
-                spell = self.player.spells[2]
-                if self.current_mana >= self.max_mana*0.1:
-                    self.player.loseMana(self.max_mana*0.1)
-                    self.player.castSpell(spell)
+                if self.spell3_cooldown == 0:
+                    spell = self.player.spells[2]
+                    if self.current_mana >= self.max_mana*0.1:
+                        self.player.loseMana(self.max_mana*0.1)
+                        self.player.castSpell(spell)
+                        self.spell3_cooldown = 20
+                        arcade.schedule(self.spell3Countdown, 1.0)
 
     def on_key_release(self, key: int, modifiers: int):
         if (
@@ -1550,6 +1579,27 @@ class Onslaught(arcade.View):
             arcade.unschedule(self.swingWeapon)
             return
 
+    def spell1Countdown(self, delta_time: float):
+        if self.spell1_cooldown == 0:
+            arcade.unschedule(self.spell1Countdown)
+            return
+        else:
+            self.spell1_cooldown -= 1
+
+    def spell2Countdown(self, delta_time: float):
+        if self.spell2_cooldown == 0:
+            arcade.unschedule(self.spell2Countdown)
+            return
+        else:
+            self.spell2_cooldown -= 1
+
+    def spell3Countdown(self, delta_time: float):
+        if self.spell3_cooldown == 0:
+            arcade.unschedule(self.spell3Countdown)
+            return
+        else:
+            self.spell3_cooldown -= 1
+
 class RoundSummaryView(arcade.View):
     def __init__(self, result, enemies_killed, leveledUp, exp_earned):
         super().__init__()
@@ -1687,8 +1737,9 @@ class CasterEnemyAttack(arcade.Sprite):
 
         if self.collides_with_sprite(onslaught.player):
                 self.remove_from_sprite_lists()
-                enemy_damage = 20 * (1.0 + (CURRENT_ROUND / 10))
-                onslaught.player.takeDamage(enemy_damage)
+                if onslaught.playerCanBeHit == True:
+                    enemy_damage = 20 * (1.0 + (CURRENT_ROUND / 10))
+                    onslaught.player.takeDamage(enemy_damage)
 
 class WeaponSprite(arcade.Sprite):
     def update(self):
@@ -1910,6 +1961,11 @@ class AssassinSpells:
         arcade.set_background_color(arcade.color.GRAY)
         arcade.unschedule(AssassinSpells.endInvisibility)
 
+    def endInvulnerability(delta_time: float):
+        global onslaught
+        onslaught.playerCanBeHit = True
+        arcade.unschedule(AssassinSpells.endInvulnerability)
+
     def poisonShuriken():
         import math
         global onslaught, mouse_x, mouse_y
@@ -1925,28 +1981,31 @@ class AssassinSpells:
         x = mouse_x
         y = mouse_y
         
-        shuriken = SpellSprite("images/shuriken.png", 0.1)
-        shuriken.setup("Poison Shuriken", dmg, 0.5)
-        shuriken_speed = 40
+        degrees = [-75, 0, 75]
 
-        start_x = onslaught.player.center_x
-        start_y = onslaught.player.center_y
-        shuriken.center_x = start_x
-        shuriken.center_y = start_y
+        for i in range(3):
+            shuriken = SpellSprite("images/shuriken.png", 0.1)
+            shuriken.setup("Poison Shuriken", dmg, 0.5)
+            shuriken_speed = 40
 
-        dest_x = x
-        dest_y = y
+            start_x = onslaught.player.center_x
+            start_y = onslaught.player.center_y
+            shuriken.center_x = start_x
+            shuriken.center_y = start_y
 
-        x_diff = dest_x - start_x
-        y_diff = dest_y - start_y
-        angle = math.atan2(y_diff, x_diff)
+            dest_x = x
+            dest_y = y
 
-        shuriken.angle = math.degrees(angle)
-        shuriken.change_x = math.cos(angle) * shuriken_speed
-        shuriken.change_y = math.sin(angle) * shuriken_speed
+            x_diff = dest_x - start_x
+            y_diff = dest_y - start_y
+            angle = math.atan2(y_diff, x_diff)
 
-        onslaught.spell_sprite_list.append(shuriken)
-        onslaught.all_sprites.append(shuriken)
+            shuriken.angle = math.degrees(angle)
+            shuriken.change_x = math.cos(angle+degrees[i]) * shuriken_speed
+            shuriken.change_y = math.sin(angle+degrees[i]) * shuriken_speed
+
+            onslaught.spell_sprite_list.append(shuriken)
+            onslaught.all_sprites.append(shuriken)
 
     def assassinate():
         import numpy as np
@@ -1968,10 +2027,14 @@ class AssassinSpells:
             dist = np.linalg.norm(np.array([x, y]) - np.array([enemy.center_x, enemy.center_y]))
             if dist <= 40:
                 # TELEPORT PLAYER AND DEAL DAMAGE, AND STOP CHECKING ENEMIES
+                onslaught.playerCanBeHit = False
+                arcade.schedule(AssassinSpells.endInvulnerability, 1.0)
                 onslaught.player.loseMana(onslaught.max_mana*0.1)
                 onslaught.player.center_x = enemy.center_x
                 onslaught.player.center_y = enemy.center_y
                 enemy.takeDamage(dmg)
+                onslaught.spell2_cooldown = 12
+                arcade.schedule(onslaught.spell2Countdown, 1.0)
                 print("Assassinate {} {} damage to an enemy.".format("dealt" if crit == False else "CRIT", dmg))
                 break
 
@@ -1980,6 +2043,8 @@ class AssassinSpells:
             dist = np.linalg.norm(np.array([x, y]) - np.array([enemy.center_x, enemy.center_y]))
             if dist <= 40:
                 # TELEPORT PLAYER AND DEAL DAMAGE, AND STOP CHECKING ENEMIES
+                onslaught.playerCanBeHit = False
+                arcade.schedule(AssassinSpells.endInvulnerability, 1.0)
                 onslaught.player.loseMana(onslaught.max_mana*0.1)
                 onslaught.player.center_x = enemy.center_x
                 onslaught.player.center_y = enemy.center_y
@@ -1992,6 +2057,8 @@ class AssassinSpells:
             dist = np.linalg.norm(np.array([x, y]) - np.array([enemy.center_x, enemy.center_y]))
             if dist <= 40:
                 # TELEPORT PLAYER AND DEAL DAMAGE, AND STOP CHECKING ENEMIES
+                onslaught.playerCanBeHit = False
+                arcade.schedule(AssassinSpells.endInvulnerability, 1.0)
                 onslaught.player.loseMana(onslaught.max_mana*0.1)
                 onslaught.player.center_x = enemy.center_x
                 onslaught.player.center_y = enemy.center_y
