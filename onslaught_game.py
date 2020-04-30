@@ -1930,7 +1930,7 @@ class Character(arcade.Sprite):
             elif self.player_class == "Void Stalker":
                 pass
         
-        if self.level >= 2:
+        if self.level >= 4:
             # Insert level 4 spell name
             if self.player_class == "Assassin":
                 spells.append("Assassinate")
@@ -1941,7 +1941,7 @@ class Character(arcade.Sprite):
             elif self.player_class == "Void Stalker":
                 pass
 
-        if self.level >= 2:
+        if self.level >= 6:
             # Insert level 6 spell name
             if self.player_class == "Assassin":
                 spells.append("Vanish")
