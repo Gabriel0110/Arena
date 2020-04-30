@@ -2076,8 +2076,8 @@ class AssassinSpells:
     def poisonShuriken():
         import math
         global onslaught, mouse_x, mouse_y
-        """ Throw a poison-tipped shuriken in the direction of your mouse that deals 100 damage + 140% of attack power to any enemy hit and slows them by 50% for 3 seconds. """
-        dmg = 100 + (onslaught.player.attack_power * 1.4)
+        """ Throw a poison-tipped shuriken in the direction of your mouse that deals 100 damage + 160% of attack power to any enemy hit and slows them by 50% for 3 seconds. """
+        dmg = 100 + (onslaught.player.attack_power * 1.6)
 
         #pos = pag.position() #queryMousePosition()
         #print(pos)
