@@ -1418,8 +1418,6 @@ class Onslaught(arcade.View):
                     if self.current_mana >= self.max_mana*0.05:
                         self.player.loseMana(self.max_mana*0.05)
                         self.player.castSpell(spell)
-                        self.spell1_cooldown = 6
-                        arcade.schedule(self.spell1Countdown, 1.0)
         elif key == arcade.key.R or key == arcade.key.KEY_2:
             if len(self.player.spells) >= 2:
                 if self.spell2_cooldown == 0:
@@ -1433,8 +1431,6 @@ class Onslaught(arcade.View):
                     if self.current_mana >= self.max_mana*0.1:
                         self.player.loseMana(self.max_mana*0.1)
                         self.player.castSpell(spell)
-                        self.spell3_cooldown = 20
-                        arcade.schedule(self.spell3Countdown, 1.0)
 
     def on_key_release(self, key: int, modifiers: int):
         if (
@@ -1756,9 +1752,15 @@ class SpellSprite(arcade.Sprite):
     def update(self):
         super().update()
         global onslaught
+        import numpy as np
 
         if self.center_y >= SCREEN_HEIGHT or self.center_x >= SCREEN_WIDTH or self.center_x <= 0 or self.center_y <= 0:
             self.remove_from_sprite_lists()
+
+        if "freezing" in self.name.lower():
+            dist = np.linalg.norm(np.array([MageSpells.nova_start_x, MageSpells.nova_start_y]) - np.array([self.center_x, self.center_y]))
+            if dist >= 175:
+                self.remove_from_sprite_lists()
 
         # Generate a list of all sprites that collided with the spell.
         basic_enemy_hit_list = arcade.check_for_collision_with_list(self, onslaught.basic_enemies_list)
@@ -1767,24 +1769,27 @@ class SpellSprite(arcade.Sprite):
 
         # Loop through each colliding sprite, remove it, and add to the score.
         for enemy in basic_enemy_hit_list:
-            self.remove_from_sprite_lists()
+            if "freezing" not in self.name.lower():
+                self.remove_from_sprite_lists()
             enemy.movementAffected = True
             enemy.takeDamage(self.dmg)
-            print("Poison Shuriken dealt {} damage to an enemy.".format(self.dmg))
+            print("Spell dealt {} damage to an enemy.".format(self.dmg))
             if self.speedEffect != 0:
                 onslaught.enemy_velocity -= onslaught.enemy_velocity * self.speedEffect
                 arcade.schedule(self.resetEnemyVelocity, 3.0)
 
         for enemy in caster_enemy_hit_list:
-            self.remove_from_sprite_lists()
+            if "freezing" not in self.name.lower():
+                self.remove_from_sprite_lists()
             enemy.takeDamage(self.dmg)
-            print("Poison Shuriken dealt {} damage to an enemy.".format(self.dmg))
+            print("Spell dealt {} damage to an enemy.".format(self.dmg))
 
         for enemy in boss_enemy_hit_list:
-            self.remove_from_sprite_lists()
+            if "freezing" not in self.name.lower():
+                self.remove_from_sprite_lists()
             enemy.movementAffected = True
             enemy.takeDamage(self.dmg)
-            print("Poison Shuriken dealt {} damage to an enemy.".format(self.dmg))
+            print("Spell dealt {} damage to an enemy.".format(self.dmg))
             if self.speedEffect != 0:
                 onslaught.enemy_velocity -= onslaught.enemy_velocity * self.speedEffect
                 arcade.schedule(self.resetEnemyVelocity, 3.0)
@@ -1845,6 +1850,13 @@ class Character(arcade.Sprite):
                 AssassinSpells.assassinate()
             elif "vanish" in spell.lower():
                 AssassinSpells.vanish()
+        elif self.player_class == "Mage":
+            if "eruption" in spell.lower():
+                MageSpells.eruption()
+            elif "teleport" in spell.lower():
+                MageSpells.teleport()
+            elif "freezing" in spell.lower():
+                MageSpells.freezingNova()
 
     def getMaxHealth(self):
         return self.player_max_health
@@ -1912,29 +1924,29 @@ class Character(arcade.Sprite):
             if self.player_class == "Assassin":
                 spells.append("Poison\nShuriken")
             elif self.player_class == "Mage":
-                pass
+                spells.append("Eruption")
             elif self.player_class == "Warrior":
                 pass
             elif self.player_class == "Void Stalker":
                 pass
         
-        if self.level >= 4:
+        if self.level >= 2:
             # Insert level 4 spell name
             if self.player_class == "Assassin":
                 spells.append("Assassinate")
             elif self.player_class == "Mage":
-                pass
+                spells.append("Teleport")
             elif self.player_class == "Warrior":
                 pass
             elif self.player_class == "Void Stalker":
                 pass
 
-        if self.level >= 6:
+        if self.level >= 2:
             # Insert level 6 spell name
             if self.player_class == "Assassin":
                 spells.append("Vanish")
             elif self.player_class == "Mage":
-                pass
+                spells.append("Freezing\nNova")
             elif self.player_class == "Warrior":
                 pass
             elif self.player_class == "Void Stalker":
@@ -1945,7 +1957,7 @@ class Character(arcade.Sprite):
             if self.player_class == "Assassin":
                 spells.append("Master\nof\nDeception")
             elif self.player_class == "Mage":
-                pass
+                spells.append("Glacial\nComet")
             elif self.player_class == "Warrior":
                 pass
             elif self.player_class == "Void Stalker":
@@ -1972,10 +1984,6 @@ class AssassinSpells:
         """ Throw a poison-tipped shuriken in the direction of your mouse that deals 50 damage + 140% of attack power to any enemy hit and slows them by 50% for 3 seconds. """
         dmg = 50 + (onslaught.player.attack_power * 1.4)
 
-        # Crit?
-        if random.random() <= onslaught.player.attack_crit:
-            dmg *= 1.5
-
         #pos = pag.position() #queryMousePosition()
         #print(pos)
         x = mouse_x
@@ -1984,6 +1992,9 @@ class AssassinSpells:
         degrees = [-75, 0, 75]
 
         for i in range(3):
+            # Crit?
+            if random.random() <= onslaught.player.attack_crit:
+                dmg *= 1.5
             shuriken = SpellSprite("images/shuriken.png", 0.1)
             shuriken.setup("Poison Shuriken", dmg, 0.5)
             shuriken_speed = 40
@@ -2006,6 +2017,8 @@ class AssassinSpells:
 
             onslaught.spell_sprite_list.append(shuriken)
             onslaught.all_sprites.append(shuriken)
+        onslaught.spell1_cooldown = 6
+        arcade.schedule(onslaught.spell1Countdown, 1.0)
 
     def assassinate():
         import numpy as np
@@ -2049,6 +2062,8 @@ class AssassinSpells:
                 onslaught.player.center_x = enemy.center_x
                 onslaught.player.center_y = enemy.center_y
                 enemy.takeDamage(dmg)
+                onslaught.spell2_cooldown = 12
+                arcade.schedule(onslaught.spell2Countdown, 1.0)
                 print("Assassinate {} {} damage to an enemy.".format("dealt" if crit == False else "CRIT", dmg))
                 break
 
@@ -2063,6 +2078,8 @@ class AssassinSpells:
                 onslaught.player.center_x = enemy.center_x
                 onslaught.player.center_y = enemy.center_y
                 enemy.takeDamage(dmg)
+                onslaught.spell2_cooldown = 12
+                arcade.schedule(onslaught.spell2Countdown, 1.0)
                 print("Assassinate {} {} damage to an enemy.".format("dealt" if crit == False else "CRIT", dmg))
                 break
 
@@ -2071,10 +2088,97 @@ class AssassinSpells:
         """ Vanish into the darkness and become hidden from your enemies for 3 seconds. """
         onslaught.player.isVisible = False
         arcade.set_background_color(arcade.color.BLACK)
+        onslaught.spell3_cooldown = 20
+        arcade.schedule(onslaught.spell3Countdown, 1.0)
         arcade.schedule(AssassinSpells.endInvisibility, 3.0)
 
     def masterOfDeception(self):
         """ You are a master of deception. Summon 3 clones of your self that will act as you do, mimicking your actions (without damage) and confusing your enemies. """
+        pass
+
+class MageSpells:
+    nova_start_x = 0
+    nova_start_y = 0
+
+    def eruption():
+        """ Explode, shooting fiery comets from all around you that burn any enemy hit for 50 damage + 110% of spell power. """
+        import math
+        global onslaught
+        
+        dmg = 50 + (onslaught.player.spell_power * 1.4)
+        
+        degrees = [30, 60, 90, 120, 150, 180, 210, 240, 270]
+
+        for i in range(9):
+            # Crit?
+            if random.random() <= onslaught.player.spell_crit:
+                dmg *= 1.5
+            fireball = SpellSprite("images/fireball.png", 0.5)
+            fireball.setup("Eruption", dmg, 0)
+            fireball_speed = 20
+
+            start_x = onslaught.player.center_x
+            start_y = onslaught.player.center_y
+            fireball.center_x = start_x
+            fireball.center_y = start_y
+
+            fireball.angle = degrees[i]
+            fireball.change_x = math.cos(degrees[i]) * fireball_speed
+            fireball.change_y = math.sin(degrees[i]) * fireball_speed
+
+            onslaught.spell_sprite_list.append(fireball)
+            onslaught.all_sprites.append(fireball)
+        onslaught.spell1_cooldown = 6
+        arcade.schedule(onslaught.spell1Countdown, 1.0)
+
+    def teleport():
+        """ Teleport to your current mouse location.  (OR, Teleport to a location clicked on). """
+        global onslaught, mouse_x, mouse_y
+        x = mouse_x
+        y = mouse_y
+
+        onslaught.player.center_x = x
+        onslaught.player.center_y = y
+        onslaught.spell2_cooldown = 12
+        arcade.schedule(onslaught.spell2Countdown, 1.0)
+
+    def freezingNova():
+        """ Freeze all nearby enemies in their place for 3 seconds and deal 25 damage + 80% of spell power. """
+        import math
+        global onslaught
+
+        MageSpells.nova_start_x = onslaught.player.center_x
+        MageSpells.nova_start_y = onslaught.player.center_y
+        
+        dmg = 25 + (onslaught.player.spell_power * 0.8)
+
+        # Crit?
+        if random.random() <= onslaught.player.spell_crit:
+            dmg *= 1.5
+        
+        degrees = [30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270]
+
+        for i in range(len(degrees)):
+            frost = SpellSprite("images/caster_bolt2.png", 0.5)
+            frost.setup("Freezing Nova", dmg, 1.0)
+            frost_speed = 20
+
+            start_x = onslaught.player.center_x
+            start_y = onslaught.player.center_y
+            frost.center_x = start_x
+            frost.center_y = start_y
+
+            frost.angle = degrees[i]
+            frost.change_x = math.cos(degrees[i]) * frost_speed
+            frost.change_y = math.sin(degrees[i]) * frost_speed
+
+            onslaught.spell_sprite_list.append(frost)
+            onslaught.all_sprites.append(frost)
+        onslaught.spell3_cooldown = 20
+        arcade.schedule(onslaught.spell3Countdown, 1.0)
+
+    def glacialComet():
+        """ Send a glacial comet soaring toward the direction of your mouse that deals 100 + 150% of spell power to any enemy hit, slowing them by 70% for 3 seconds. """
         pass
 
 class LoginWindow(Frame):
