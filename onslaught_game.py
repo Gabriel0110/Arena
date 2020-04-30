@@ -1283,7 +1283,7 @@ class Onslaught(arcade.View):
             if CURRENT_ROUND % 4 == 0 and self.bossSpawned == False:
                 self.bossSpawned = True
                 # Spawn a boss enemy
-                boss_enemy_health = 500 + CURRENT_ROUND*60
+                boss_enemy_health = 900 + CURRENT_ROUND*80
 
                 # First, create the new enemy sprite
                 boss_enemy = EnemySprite("images/boss_sprite.png", 1.3)
@@ -1430,6 +1430,13 @@ class Onslaught(arcade.View):
                     spell = self.player.spells[2]
                     if self.current_mana >= self.max_mana*0.1:
                         self.player.loseMana(self.max_mana*0.1)
+                        self.player.castSpell(spell)
+        elif key == arcade.key.C or key == arcade.key.KEY_4:
+            if len(self.player.spells) >= 4:
+                if self.spell4_cooldown == 0:
+                    spell = self.player.spells[3]
+                    if self.current_mana >= self.max_mana*0.25:
+                        self.player.loseMana(self.max_mana*0.25)
                         self.player.castSpell(spell)
 
     def on_key_release(self, key: int, modifiers: int):
@@ -1596,6 +1603,13 @@ class Onslaught(arcade.View):
         else:
             self.spell3_cooldown -= 1
 
+    def spell4Countdown(self, delta_time: float):
+        if self.spell4_cooldown == 0:
+            arcade.unschedule(self.spell4Countdown)
+            return
+        else:
+            self.spell4_cooldown -= 1
+
 class RoundSummaryView(arcade.View):
     def __init__(self, result, enemies_killed, leveledUp, exp_earned):
         super().__init__()
@@ -1759,7 +1773,7 @@ class SpellSprite(arcade.Sprite):
 
         if "freezing" in self.name.lower():
             dist = np.linalg.norm(np.array([MageSpells.nova_start_x, MageSpells.nova_start_y]) - np.array([self.center_x, self.center_y]))
-            if dist >= 175:
+            if dist >= 200:
                 self.remove_from_sprite_lists()
 
         # Generate a list of all sprites that collided with the spell.
@@ -1857,6 +1871,8 @@ class Character(arcade.Sprite):
                 MageSpells.teleport()
             elif "freezing" in spell.lower():
                 MageSpells.freezingNova()
+            elif "glacial" in spell.lower():
+                MageSpells.glacialComet()
 
     def getMaxHealth(self):
         return self.player_max_health
@@ -2150,7 +2166,7 @@ class MageSpells:
         MageSpells.nova_start_x = onslaught.player.center_x
         MageSpells.nova_start_y = onslaught.player.center_y
         
-        dmg = 25 + (onslaught.player.spell_power * 0.8)
+        dmg = 0 # 25 + (onslaught.player.spell_power * 0.8)
 
         # Crit?
         if random.random() <= onslaught.player.spell_crit:
@@ -2178,8 +2194,44 @@ class MageSpells:
         arcade.schedule(onslaught.spell3Countdown, 1.0)
 
     def glacialComet():
-        """ Send a glacial comet soaring toward the direction of your mouse that deals 100 + 150% of spell power to any enemy hit, slowing them by 70% for 3 seconds. """
-        pass
+        global onslaught
+        import math
+        """ Send a glacial comet soaring toward the direction of your mouse that deals 300 + 200% of spell power to any enemy hit, slowing them by 70% for 3 seconds. """
+        dmg = 300 + (onslaught.player.spell_power * 2.0)
+
+        #pos = pag.position() #queryMousePosition()
+        #print(pos)
+        x = mouse_x
+        y = mouse_y
+
+        # Crit?
+        if random.random() <= onslaught.player.attack_crit:
+            dmg *= 1.5
+
+        comet = SpellSprite("images/caster_bolt.png", 3.5)
+        comet.setup("Glacial Comet", dmg, 0.7)
+        comet_speed = 30
+
+        start_x = onslaught.player.center_x
+        start_y = onslaught.player.center_y
+        comet.center_x = start_x
+        comet.center_y = start_y
+
+        dest_x = x
+        dest_y = y
+
+        x_diff = dest_x - start_x
+        y_diff = dest_y - start_y
+        angle = math.atan2(y_diff, x_diff)
+
+        comet.angle = math.degrees(angle)
+        comet.change_x = math.cos(angle) * comet_speed
+        comet.change_y = math.sin(angle) * comet_speed
+
+        onslaught.spell_sprite_list.append(comet)
+        onslaught.all_sprites.append(comet)
+        onslaught.spell4_cooldown = 45
+        arcade.schedule(onslaught.spell4Countdown, 1.0)
 
 class LoginWindow(Frame):
     def __init__(self, master=None): 
