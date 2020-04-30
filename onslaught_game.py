@@ -1264,7 +1264,7 @@ class Onslaught(arcade.View):
         if self.current_enemy_count < self.total_enemy_count:
             if self.current_enemy_count % 5 == 0:
                 # Spawn caster enemy
-                caster_enemy_health = 150 + CURRENT_ROUND*60
+                caster_enemy_health = 300 + CURRENT_ROUND*55
 
                 # First, create the new enemy sprite
                 caster_enemy = EnemySprite("images/caster_sprite.png", 0.8)
@@ -1285,7 +1285,7 @@ class Onslaught(arcade.View):
             if CURRENT_ROUND % 4 == 0 and self.bossSpawned == False:
                 self.bossSpawned = True
                 # Spawn a boss enemy
-                boss_enemy_health = 900 + CURRENT_ROUND*80
+                boss_enemy_health = 800 + CURRENT_ROUND*100
 
                 # First, create the new enemy sprite
                 boss_enemy = EnemySprite("images/boss_sprite.png", 1.3)
@@ -1304,7 +1304,7 @@ class Onslaught(arcade.View):
                 self.current_enemy_count += 1
             
             # Now spawn basic enemy like normal
-            basic_enemy_health = 100 + CURRENT_ROUND*60
+            basic_enemy_health = 200 + CURRENT_ROUND*50
 
             # First, create the new enemy sprite
             enemy = EnemySprite("images/enemy_sprite.png", 0.8)
@@ -1931,7 +1931,7 @@ class Character(arcade.Sprite):
     def basicDamage(self):
         global onslaught
         if self.player_class == "Assassin" or self.player_class == "Warrior" or self.player_class == "Void Stalker":
-            damage = 3 + self.attack_power + (0 if onslaught.voidTipActive == False else (self.attack_power*2 + self.spell_power*1))
+            damage = 3 + self.attack_power + (0 if onslaught.voidTipActive == False else (self.attack_power*1.5 + self.spell_power*0.5))
             if random.random() <= self.attack_crit:
                 damage *= 1.5
                 print("Player critical strike hit for {}!".format(damage))
@@ -2076,8 +2076,8 @@ class AssassinSpells:
     def poisonShuriken():
         import math
         global onslaught, mouse_x, mouse_y
-        """ Throw a poison-tipped shuriken in the direction of your mouse that deals 50 damage + 140% of attack power to any enemy hit and slows them by 50% for 3 seconds. """
-        dmg = 50 + (onslaught.player.attack_power * 1.4)
+        """ Throw a poison-tipped shuriken in the direction of your mouse that deals 100 damage + 140% of attack power to any enemy hit and slows them by 50% for 3 seconds. """
+        dmg = 100 + (onslaught.player.attack_power * 1.4)
 
         #pos = pag.position() #queryMousePosition()
         #print(pos)
@@ -2118,8 +2118,8 @@ class AssassinSpells:
     def assassinate():
         import numpy as np
         global onslaught, mouse_x, mouse_y
-        """ Step through the shadows to an enemy target and stab them in the back for 50 damage + 200% of attack power. Always a critical hit. Must have mouse cursor on an enemy to perform. """
-        dmg = 50 + (onslaught.player.attack_power * 2.0)
+        """ Step through the shadows to an enemy target and stab them in the back for 150 damage + 200% of attack power. Always a critical hit. Must have mouse cursor on an enemy to perform. """
+        dmg = 150 + (onslaught.player.attack_power * 2.0)
         crit = False
 
         # Crit?
@@ -2198,7 +2198,7 @@ class MageSpells:
     nova_start_y = 0
 
     def eruption():
-        """ Explode, shooting fiery comets from all around you that burn any enemy hit for 50 damage + 110% of spell power. """
+        """ Explode, shooting fiery comets from all around you that burn any enemy hit for 50 damage + 140% of spell power. """
         import math
         global onslaught
         
@@ -2320,7 +2320,7 @@ class VoidStalkerSpells:
 
     def voidTippedBlade():
         global onslaught
-        """ Your next basic attack deals 200% of attack power and 100% of spell power.  If the target is a player, the player will have 10% of their mana drained. """
+        """ Your next basic attack deals 150% of attack power and 50% of spell power.  If the target is a player, the player will have 10% of their mana drained. """
         onslaught.voidTipActive = True
         onslaught.spell1_cooldown = 6
         arcade.schedule(onslaught.spell1Countdown, 1.0)
