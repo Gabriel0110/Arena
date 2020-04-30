@@ -453,11 +453,11 @@ class CharacterCreationView(arcade.View):
 
         self.theme = getButtonThemes()
         self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.7, 230, 50, text="Assassin", theme=self.theme))
-        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.50, SCREEN_HEIGHT*0.7, 230, 50, text="Warrior", theme=self.theme))
+        #self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.50, SCREEN_HEIGHT*0.7, 230, 50, text="Warrior", theme=self.theme))
         self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.7, 230, 50, text="Mage", theme=self.theme))
-        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.5, 230, 50, text="Necromancer", theme=self.theme))
+        #self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.5, 230, 50, text="Necromancer", theme=self.theme))
         self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.50, SCREEN_HEIGHT*0.5, 230, 50, text="Void Stalker", theme=self.theme))
-        self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.5, 230, 50, text="Friar", theme=self.theme))
+        #self.button_list.append(ClassButton(self, SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.5, 230, 50, text="Friar", theme=self.theme))
 
         self.button_list.append(PlayButton(self, SCREEN_WIDTH*0.25, SCREEN_HEIGHT*0.1, 110, 50, text="Create", theme=self.theme))
         self.button_list.append(BackButton(CharacterSelect(), SCREEN_WIDTH*0.75, SCREEN_HEIGHT*0.1, 110, 50, text="Back", theme=self.theme))
@@ -1016,6 +1016,8 @@ class Onslaught(arcade.View):
         self.spell2_cooldown = 0
         self.spell3_cooldown = 0
         self.spell4_cooldown = 0
+
+        self.voidTipActive = False
 
         # FOR TESTING - set to "True" to not lose when hit by enemy.  Otherwise, KEEP "False"
         self.GOD_MODE = False
@@ -1648,11 +1650,13 @@ class EnemySprite(arcade.Sprite):
         super().update()
         global onslaught
 
-        if onslaught.char_class == "Assassin" or onslaught.char_class == "Warrior":
+        if onslaught.char_class == "Assassin" or onslaught.char_class == "Warrior" or onslaught.char_class == "Void Stalker":
             if self.collides_with_sprite(onslaught.sword):
                 if onslaught.enemyHit == False:
                     onslaught.enemyHit = True
                     self.enemy_current_health -= onslaught.player.basicDamage()
+                    if onslaught.voidTipActive == True:
+                        onslaught.voidTipActive = False
         elif onslaught.char_class == "Mage":
             if self.collides_with_list(onslaught.basic_attack_list):
                 if onslaught.enemyHit == False:
@@ -1788,9 +1792,16 @@ class SpellSprite(arcade.Sprite):
             enemy.movementAffected = True
             enemy.takeDamage(self.dmg)
             print("Spell dealt {} damage to an enemy.".format(self.dmg))
+
+            if "grip" in self.name.lower():
+                onslaught.playerCanBeHit = False
+                enemy.center_x = onslaught.player.center_x
+                enemy.center_y = onslaught.player.center_y
+                arcade.schedule(AssassinSpells.endInvulnerability, 1.0)
+
             if self.speedEffect != 0:
                 onslaught.enemy_velocity -= onslaught.enemy_velocity * self.speedEffect
-                arcade.schedule(self.resetEnemyVelocity, 3.0)
+                arcade.schedule(self.resetEnemyVelocity, self.speedDuration)
 
         for enemy in caster_enemy_hit_list:
             if "freezing" not in self.name.lower():
@@ -1798,20 +1809,34 @@ class SpellSprite(arcade.Sprite):
             enemy.takeDamage(self.dmg)
             print("Spell dealt {} damage to an enemy.".format(self.dmg))
 
+            if "grip" in self.name.lower():
+                onslaught.playerCanBeHit = False
+                enemy.center_x = onslaught.player.center_x
+                enemy.center_y = onslaught.player.center_y
+                arcade.schedule(AssassinSpells.endInvulnerability, 1.0)
+
         for enemy in boss_enemy_hit_list:
             if "freezing" not in self.name.lower():
                 self.remove_from_sprite_lists()
             enemy.movementAffected = True
             enemy.takeDamage(self.dmg)
             print("Spell dealt {} damage to an enemy.".format(self.dmg))
+
+            if "grip" in self.name.lower():
+                onslaught.playerCanBeHit = False
+                enemy.center_x = onslaught.player.center_x
+                enemy.center_y = onslaught.player.center_y
+                arcade.schedule(AssassinSpells.endInvulnerability, 1.0)
+
             if self.speedEffect != 0:
                 onslaught.enemy_velocity -= onslaught.enemy_velocity * self.speedEffect
-                arcade.schedule(self.resetEnemyVelocity, 3.0)
+                arcade.schedule(self.resetEnemyVelocity, self.speedDuration)
 
-    def setup(self, name, dmg, speedEffect):
+    def setup(self, name, dmg, speedEffect, speedDuration=3.0):
         self.name = name
         self.dmg = dmg
         self.speedEffect = speedEffect
+        self.speedDuration = speedDuration
 
     def resetEnemyVelocity(self, delta_time: float):
         onslaught.enemy_velocity = 2.5
@@ -1875,6 +1900,15 @@ class Character(arcade.Sprite):
                 MageSpells.freezingNova()
             elif "glacial" in spell.lower():
                 MageSpells.glacialComet()
+        elif self.player_class == "Void Stalker":
+            if "void-tipped" in spell.lower():
+                VoidStalkerSpells.voidTippedBlade()
+            elif "grip" in spell.lower():
+                VoidStalkerSpells.shadowGrip()
+            elif "nova" in spell.lower():
+                VoidStalkerSpells.voidNova()
+            elif "enter" in spell.lower():
+                VoidStalkerSpells.enterTheVoid()
 
     def getMaxHealth(self):
         return self.player_max_health
@@ -1895,8 +1929,9 @@ class Character(arcade.Sprite):
         self.player_current_mana -= mana
 
     def basicDamage(self):
-        if self.player_class == "Assassin":
-            damage = 3 + self.attack_power
+        global onslaught
+        if self.player_class == "Assassin" or self.player_class == "Warrior" or self.player_class == "Void Stalker":
+            damage = 3 + self.attack_power + (0 if onslaught.voidTipActive == False else (self.attack_power*2 + self.spell_power*1))
             if random.random() <= self.attack_crit:
                 damage *= 1.5
                 print("Player critical strike hit for {}!".format(damage))
@@ -1946,7 +1981,7 @@ class Character(arcade.Sprite):
             elif self.player_class == "Warrior":
                 pass
             elif self.player_class == "Void Stalker":
-                pass
+                spells.append("Void-Tipped\nBlade")
         
         if self.level >= 4:
             # Insert level 4 spell name
@@ -1957,7 +1992,7 @@ class Character(arcade.Sprite):
             elif self.player_class == "Warrior":
                 pass
             elif self.player_class == "Void Stalker":
-                pass
+                spells.append("Shadow\nGrip")
 
         if self.level >= 6:
             # Insert level 6 spell name
@@ -1968,7 +2003,7 @@ class Character(arcade.Sprite):
             elif self.player_class == "Warrior":
                 pass
             elif self.player_class == "Void Stalker":
-                pass
+                spells.append("Void\nNova")
 
         if self.level >= 8:
             # Insert level 8 spell name
@@ -1979,7 +2014,7 @@ class Character(arcade.Sprite):
             elif self.player_class == "Warrior":
                 pass
             elif self.player_class == "Void Stalker":
-                pass
+                spells.append("Enter\nthe\nVoid")
 
         return spells
 
@@ -2278,6 +2313,65 @@ class MageSpells:
         onslaught.all_sprites.append(comet)
         onslaught.spell4_cooldown = 45
         arcade.schedule(onslaught.spell4Countdown, 1.0)
+
+class VoidStalkerSpells:
+    def voidTippedBlade():
+        global onslaught
+        """ Your next basic attack deals 200% of attack power and 100% of spell power.  If the target is a player, the player will have 10% of their mana drained. """
+        onslaught.voidTipActive = True
+        onslaught.spell1_cooldown = 6
+        arcade.schedule(onslaught.spell1Countdown, 1.0)
+
+    def shadowGrip():
+        """ Shoot a bolt of shadow in the direction of your mouse. If it hits an enemy, deal 50 damage + 100% of attack power and 75% of spell power, and grip them through the shadows to your current location, immobilizing them for 1 second. """
+        global onslaught
+        import math
+
+        dmg = 50 + (onslaught.player.attack_power * 1.0 + onslaught.player.spell_power * 0.75)
+
+        #pos = pag.position() #queryMousePosition()
+        #print(pos)
+        x = mouse_x
+        y = mouse_y
+
+        # Crit?
+        if random.random() <= onslaught.player.attack_crit:
+            dmg *= 1.5
+
+        grip = SpellSprite("images/shadow_ball.png", 0.2)
+        grip.setup("Shadow Grip", dmg, 1.0, 1.0) # 100% slow for 1 second
+        grip_speed = 30
+
+        start_x = onslaught.player.center_x
+        start_y = onslaught.player.center_y
+        grip.center_x = start_x
+        grip.center_y = start_y
+
+        dest_x = x
+        dest_y = y
+
+        x_diff = dest_x - start_x
+        y_diff = dest_y - start_y
+        angle = math.atan2(y_diff, x_diff)
+
+        grip.angle = math.degrees(angle)
+        grip.change_x = math.cos(angle) * grip_speed
+        grip.change_y = math.sin(angle) * grip_speed
+
+        onslaught.spell_sprite_list.append(grip)
+        onslaught.all_sprites.append(grip)
+        onslaught.spell2_cooldown = 12
+        arcade.schedule(onslaught.spell2Countdown, 1.0)
+
+    def voidNova():
+        """ Explode with the power of the void, sending out void bolts in all directions dealing 50 damage + 60% of attack power and 20% of spell power to all enemies hit.  If the target is a player,the player will have 10% of their mana drained. """
+        pass
+
+    def enterTheVoid():
+        """ Enter the void, stepping into another dimension and becoming unseen by enemies for 8 seconds. While active, you are slowed, but you can attack your enemies undetected and unseen with 25% increased attack power. At the
+        end of the duration, you will exit the void from where you entered, becoming visible again. Area effect spells and abilities can still hit you in the void. """
+        pass
+
 
 class LoginWindow(Frame):
     def __init__(self, master=None): 
