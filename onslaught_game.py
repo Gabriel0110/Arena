@@ -1994,7 +1994,7 @@ class Character(arcade.Sprite):
             elif self.player_class == "Void Stalker":
                 spells.append("Shadow\nGrip")
 
-        if self.level >= 6:
+        if self.level >= 2:
             # Insert level 6 spell name
             if self.player_class == "Assassin":
                 spells.append("Vanish")
@@ -2005,7 +2005,7 @@ class Character(arcade.Sprite):
             elif self.player_class == "Void Stalker":
                 spells.append("Void\nNova")
 
-        if self.level >= 8:
+        if self.level >= 2:
             # Insert level 8 spell name
             if self.player_class == "Assassin":
                 spells.append("Shuriken\nBlitz")
@@ -2315,6 +2315,9 @@ class MageSpells:
         arcade.schedule(onslaught.spell4Countdown, 1.0)
 
 class VoidStalkerSpells:
+    bonus_ap = 0
+    movespeed_reduction = 0
+
     def voidTippedBlade():
         global onslaught
         """ Your next basic attack deals 200% of attack power and 100% of spell power.  If the target is a player, the player will have 10% of their mana drained. """
@@ -2364,13 +2367,57 @@ class VoidStalkerSpells:
         arcade.schedule(onslaught.spell2Countdown, 1.0)
 
     def voidNova():
-        """ Explode with the power of the void, sending out void bolts in all directions dealing 50 damage + 60% of attack power and 20% of spell power to all enemies hit.  If the target is a player,the player will have 10% of their mana drained. """
-        pass
+        """ Explode with the power of the void, sending out void bolts in all directions dealing 50 damage + 100% of attack power and 40% of spell power to all enemies hit.  If the target is a player,the player will have 10% of their mana drained. """
+        import math
+        global onslaught
+        
+        dmg = 50 + (onslaught.player.attack_power * 1.0 + onslaught.player.spell_power * 0.4)
+        
+        degrees = [30, 60, 90, 120, 150, 180, 210, 240, 270]
+
+        for i in range(9):
+            # Crit?
+            if random.random() <= onslaught.player.spell_crit:
+                dmg *= 1.5
+            fireball = SpellSprite("images/shadow_ball.png", 0.5)
+            fireball.setup("Void Nova", dmg, 0)
+            fireball_speed = 20
+
+            start_x = onslaught.player.center_x
+            start_y = onslaught.player.center_y
+            fireball.center_x = start_x
+            fireball.center_y = start_y
+
+            fireball.angle = degrees[i]
+            fireball.change_x = math.cos(degrees[i]) * fireball_speed
+            fireball.change_y = math.sin(degrees[i]) * fireball_speed
+
+            onslaught.spell_sprite_list.append(fireball)
+            onslaught.all_sprites.append(fireball)
+        onslaught.spell3_cooldown = 20
+        arcade.schedule(onslaught.spell3Countdown, 1.0)
 
     def enterTheVoid():
         """ Enter the void, stepping into another dimension and becoming unseen by enemies for 8 seconds. While active, you are slowed, but you can attack your enemies undetected and unseen with 25% increased attack power. At the
         end of the duration, you will exit the void from where you entered, becoming visible again. Area effect spells and abilities can still hit you in the void. """
-        pass
+        global onslaught
+        onslaught.player.isVisible = False
+        arcade.set_background_color(arcade.color.BLACK)
+        VoidStalkerSpells.bonus_ap = onslaught.player.attack_power * 0.25
+        onslaught.player.attack_power += VoidStalkerSpells.bonus_ap
+        VoidStalkerSpells.movespeed_reduction = onslaught.player_velocity * 0.3
+        onslaught.player_velocity -= VoidStalkerSpells.movespeed_reduction 
+        onslaught.spell4_cooldown = 45
+        arcade.schedule(onslaught.spell4Countdown, 1.0)
+        arcade.schedule(VoidStalkerSpells.endEnterTheVoid, 8.0)
+
+    def endEnterTheVoid(delta_time: float):
+        global onslaught
+        onslaught.player.isVisible = True
+        arcade.set_background_color(arcade.color.GRAY)
+        onslaught.player.attack_power -= VoidStalkerSpells.bonus_ap
+        onslaught.player_velocity += VoidStalkerSpells.movespeed_reduction 
+        arcade.unschedule(VoidStalkerSpells.endEnterTheVoid)
 
 
 class LoginWindow(Frame):
