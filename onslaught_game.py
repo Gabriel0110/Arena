@@ -1328,7 +1328,7 @@ class Onslaught(arcade.View):
         # Will need to check for character levelup after each round, whether win or lose
         if result == "Won":
             # Give player stats necessary AND update curr_round_num in DB to +1
-            exp_earned = (40 * self.enemies_killed) + (CURRENT_ROUND * 100) + (300 if self.bossSpawned else 0)
+            exp_earned = (100 * self.enemies_killed) + (CURRENT_ROUND * 100) + (300 if self.bossSpawned else 0)
             self.player.current_exp += exp_earned
             CURRENT_ROUND += 1
 
@@ -1340,10 +1340,10 @@ class Onslaught(arcade.View):
                 leveledUp = True
                 self.player.current_exp -= self.game_settings.level_exp_requirements[self.player.level+1]
                 self.player.level += 1
-                self.player.strength += 4
-                self.player.agility += 4
-                self.player.intellect += 4
-                self.player.stamina += 4
+                self.player.strength += 4 + self.player.level
+                self.player.agility += 4 + self.player.level
+                self.player.intellect += 4 + self.player.level
+                self.player.stamina += 4 + self.player.level
                 
                 query = """UPDATE characters SET char_level = ?, char_strength = ?, char_agility = ?, char_intellect = ?, char_stamina = ?, curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
                 data = (self.player.level, self.player.strength, self.player.agility, self.player.intellect, self.player.stamina, self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
@@ -1357,7 +1357,7 @@ class Onslaught(arcade.View):
             game.show_view(RoundSummaryView("WIN", self.enemies_killed, leveledUp, exp_earned))
         if result == "Lost":
             # Still reward player with experience from enemies killed, but nothing else UNLESS leveled up
-            exp_earned = (40 * self.enemies_killed)
+            exp_earned = (70 * self.enemies_killed)
             self.player.current_exp += exp_earned
 
             leveledUp = False
@@ -1368,10 +1368,10 @@ class Onslaught(arcade.View):
                 leveledUp = True
                 self.player.current_exp -= self.game_settings.level_exp_requirements[self.player.level+1]
                 self.player.level += 1
-                self.player.strength += 4
-                self.player.agility += 4
-                self.player.intellect += 4
-                self.player.stamina += 4
+                self.player.strength += 4 + self.player.level
+                self.player.agility += 4 + self.player.level
+                self.player.intellect += 4 + self.player.level
+                self.player.stamina += 4 + self.player.level
                 
                 query = """UPDATE characters SET char_level = ?, char_strength = ?, char_agility = ?, char_intellect = ?, char_stamina = ?, curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
                 data = (self.player.level, self.player.strength, self.player.agility, self.player.intellect, self.player.stamina, self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
@@ -1864,6 +1864,8 @@ class Character(arcade.Sprite):
                 AssassinSpells.assassinate()
             elif "vanish" in spell.lower():
                 AssassinSpells.vanish()
+            elif "blitz" in spell.lower():
+                AssassinSpells.shurikenBlitz()
         elif self.player_class == "Mage":
             if "eruption" in spell.lower():
                 MageSpells.eruption()
@@ -1971,7 +1973,7 @@ class Character(arcade.Sprite):
         if self.level >= 8:
             # Insert level 8 spell name
             if self.player_class == "Assassin":
-                spells.append("Master\nof\nDeception")
+                spells.append("Shuriken\nBlitz")
             elif self.player_class == "Mage":
                 spells.append("Glacial\nComet")
             elif self.player_class == "Warrior":
@@ -1983,6 +1985,48 @@ class Character(arcade.Sprite):
 
 
 class AssassinSpells:
+    blitz_timer = 0.0
+
+    def startShurikenBlitz(delta_time: float):
+        global onslaught
+        import math
+
+        if AssassinSpells.blitz_timer < 4.0:
+            AssassinSpells.blitz_timer += 0.1
+            dmg = 10 + (onslaught.player.attack_power * 0.5)
+
+            x = mouse_x
+            y = mouse_y
+
+            # Crit?
+            if random.random() <= onslaught.player.attack_crit:
+                dmg *= 1.5
+            shuriken = SpellSprite("images/shuriken.png", 0.1)
+            shuriken.setup("Shuriken Blitz", dmg, 0.3)
+            shuriken_speed = 40
+
+            start_x = onslaught.player.center_x
+            start_y = onslaught.player.center_y
+            shuriken.center_x = start_x
+            shuriken.center_y = start_y
+
+            dest_x = x
+            dest_y = y
+
+            x_diff = dest_x - start_x
+            y_diff = dest_y - start_y
+            angle = math.atan2(y_diff, x_diff)
+
+            shuriken.angle = math.degrees(angle)
+            shuriken.change_x = math.cos(angle) * shuriken_speed
+            shuriken.change_y = math.sin(angle) * shuriken_speed
+
+            onslaught.spell_sprite_list.append(shuriken)
+            onslaught.all_sprites.append(shuriken)
+        else:
+            arcade.unschedule(AssassinSpells.startShurikenBlitz)
+            AssassinSpells.blitz_timer = 0
+
     def endInvisibility(self):
         global onslaught
         onslaught.player.isVisible = True
@@ -2108,9 +2152,11 @@ class AssassinSpells:
         arcade.schedule(onslaught.spell3Countdown, 1.0)
         arcade.schedule(AssassinSpells.endInvisibility, 3.0)
 
-    def masterOfDeception(self):
-        """ You are a master of deception. Summon 3 clones of your self that will act as you do, mimicking your actions (without damage) and confusing your enemies. """
-        pass
+    def shurikenBlitz():
+        """ Launch a barrage of shuriken at the location of your mouse for 4 seconds. Each shuriken deals 10 damage + 50% of attack power and slows the enemy by 30%. """
+        arcade.schedule(AssassinSpells.startShurikenBlitz, 0.1)
+        onslaught.spell4_cooldown = 45
+        arcade.schedule(onslaught.spell4Countdown, 1.0)
 
 class MageSpells:
     nova_start_x = 0
