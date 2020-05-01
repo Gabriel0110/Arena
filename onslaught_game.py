@@ -65,7 +65,7 @@ class GameSettings():
 
     def setLevelRequirements(self):
         # Populates level exp requirements dict with all experience points required to get to each level (current max level is 50)
-        level_req = 400
+        level_req = 900
         self.level_exp_requirements = {}
         for level in range(2, 51):
             if level == 2:
@@ -73,12 +73,12 @@ class GameSettings():
             else:
                 self.level_exp_requirements[level] = level_req
 
-            if level <= 10:
-                level_req *= 1.4
-            elif 10 < level <= 15:
-                level_req *= 1.3
-            elif 15 < level <= 20:
+            if level <= 5:
+                level_req *= 1.5
+            elif 5 < level <= 15:
                 level_req *= 1.2
+            elif 15 < level <= 20:
+                level_req *= 1.13
             elif 20 < level <= 25:
                 level_req *= 1.1
             elif level > 25:
@@ -565,10 +565,10 @@ class CharacterCreationView(arcade.View):
         # STAT VALUES ARE ARBITRARY RIGHT NOW -- just putting something there to satisfy
         char_texture = "images/adventurer_stand.png" # SHOULD BE DIFFERENT FOR EVERY CLASS
         char_level = 1
-        char_stamina = 9
-        char_strength = 5
-        char_intellect = 5
-        char_agility = 5
+        char_stamina = 12
+        char_strength = 7
+        char_intellect = 8
+        char_agility = 7
         char_attack_crit_chance = 0.05 + char_agility * game_settings.AGILITY_CRIT_MULTIPLIER
         char_spell_crit_chance = 0.05 + char_intellect * game_settings.INTELLECT_CRIT_MULTIPLIER
         char_spell_power = char_intellect * game_settings.INTELLECT_SP_MULTIPLIER
@@ -1274,7 +1274,7 @@ class Onslaught(arcade.View):
         if self.current_enemy_count < self.total_enemy_count:
             if self.current_enemy_count % 5 == 0:
                 # Spawn caster enemy
-                caster_enemy_health = 300 + CURRENT_ROUND*70
+                caster_enemy_health = 150 + CURRENT_ROUND*50
 
                 # First, create the new enemy sprite
                 caster_enemy = EnemySprite("images/caster_sprite.png", 0.8)
@@ -1352,10 +1352,10 @@ class Onslaught(arcade.View):
                 leveledUp = True
                 self.player.current_exp -= self.game_settings.level_exp_requirements[self.player.level+1]
                 self.player.level += 1
-                self.player.strength += 4 + (self.player.level // 2)
-                self.player.agility += 4 + (self.player.level // 2)
-                self.player.intellect += 4 + (self.player.level // 2)
-                self.player.stamina += 4 + (self.player.level // 2)
+                self.player.strength += 4 + self.player.level
+                self.player.agility += 4 + self.player.level
+                self.player.intellect += 4 + self.player.level
+                self.player.stamina += 4 + self.player.level
                 
                 query = """UPDATE characters SET char_level = ?, char_strength = ?, char_agility = ?, char_intellect = ?, char_stamina = ?, curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
                 data = (self.player.level, self.player.strength, self.player.agility, self.player.intellect, self.player.stamina, self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
@@ -1380,10 +1380,10 @@ class Onslaught(arcade.View):
                 leveledUp = True
                 self.player.current_exp -= self.game_settings.level_exp_requirements[self.player.level+1]
                 self.player.level += 1
-                self.player.strength += 4 + (self.player.level // 2)
-                self.player.agility += 4 + (self.player.level // 2)
-                self.player.intellect += 4 + (self.player.level // 2)
-                self.player.stamina += 4 + (self.player.level // 2)
+                self.player.strength += 4 + self.player.level
+                self.player.agility += 4 + self.player.level
+                self.player.intellect += 4 + self.player.level
+                self.player.stamina += 4 + self.player.level
                 
                 query = """UPDATE characters SET char_level = ?, char_strength = ?, char_agility = ?, char_intellect = ?, char_stamina = ?, curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
                 data = (self.player.level, self.player.strength, self.player.agility, self.player.intellect, self.player.stamina, self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
@@ -2128,8 +2128,8 @@ class AssassinSpells:
     def assassinate():
         import numpy as np
         global onslaught, mouse_x, mouse_y
-        """ Step through the shadows to an enemy target and stab them in the back for 150 damage + 200% of attack power. Always a critical hit. Must have mouse cursor on an enemy to perform. """
-        dmg = 150 + (onslaught.player.attack_power * 2.0)
+        """ Step through the shadows to an enemy target and stab them in the back for 150 damage + 180% of attack power. Always a critical hit. Must have mouse cursor on an enemy to perform. """
+        dmg = 150 + (onslaught.player.attack_power * 1.8)
         crit = False
 
         # Crit?
