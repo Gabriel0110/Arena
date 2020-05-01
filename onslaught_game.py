@@ -1264,7 +1264,7 @@ class Onslaught(arcade.View):
         if self.current_enemy_count < self.total_enemy_count:
             if self.current_enemy_count % 5 == 0:
                 # Spawn caster enemy
-                caster_enemy_health = 300 + CURRENT_ROUND*55
+                caster_enemy_health = 300 + CURRENT_ROUND*70
 
                 # First, create the new enemy sprite
                 caster_enemy = EnemySprite("images/caster_sprite.png", 0.8)
@@ -1285,7 +1285,7 @@ class Onslaught(arcade.View):
             if CURRENT_ROUND % 4 == 0 and self.bossSpawned == False:
                 self.bossSpawned = True
                 # Spawn a boss enemy
-                boss_enemy_health = 800 + CURRENT_ROUND*100
+                boss_enemy_health = 1000 + CURRENT_ROUND*100
 
                 # First, create the new enemy sprite
                 boss_enemy = EnemySprite("images/boss_sprite.png", 1.3)
@@ -1304,7 +1304,7 @@ class Onslaught(arcade.View):
                 self.current_enemy_count += 1
             
             # Now spawn basic enemy like normal
-            basic_enemy_health = 200 + CURRENT_ROUND*50
+            basic_enemy_health = 150 + CURRENT_ROUND*70
 
             # First, create the new enemy sprite
             enemy = EnemySprite("images/enemy_sprite.png", 0.8)
