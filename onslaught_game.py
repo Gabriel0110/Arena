@@ -57,7 +57,7 @@ class GameSettings():
         self.INTELLECT_CRIT_MULTIPLIER = 0.0005 # each intellect point gives 0.0005% SPELL crit chance
 
         self.AGILITY_AP_MULTIPLIER = 1 # each point of agility gives 1 attack power
-        self.STRENGTH_AP_MULTIPLIER = 3 # each point of strength gives 3 attack power
+        self.STRENGTH_AP_MULTIPLIER = 2 # each point of strength gives 3 attack power
         self.AP_DAMAGE_MULTIPLIER = 2 # each point of attack power increases melee/ranged damage by 2  (WILL NEED TO MULTIPLY THIS TO ABILITY DAMAGE)
 
         self.INTELLECT_SP_MULTIPLIER = 2 # each point of intellect gives 2 spell power
@@ -1342,10 +1342,10 @@ class Onslaught(arcade.View):
                 leveledUp = True
                 self.player.current_exp -= self.game_settings.level_exp_requirements[self.player.level+1]
                 self.player.level += 1
-                self.player.strength += 4 + self.player.level
-                self.player.agility += 4 + self.player.level
-                self.player.intellect += 4 + self.player.level
-                self.player.stamina += 4 + self.player.level
+                self.player.strength += 4 + (self.player.level // 2)
+                self.player.agility += 4 + (self.player.level // 2)
+                self.player.intellect += 4 + (self.player.level // 2)
+                self.player.stamina += 4 + (self.player.level // 2)
                 
                 query = """UPDATE characters SET char_level = ?, char_strength = ?, char_agility = ?, char_intellect = ?, char_stamina = ?, curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
                 data = (self.player.level, self.player.strength, self.player.agility, self.player.intellect, self.player.stamina, self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
@@ -1370,10 +1370,10 @@ class Onslaught(arcade.View):
                 leveledUp = True
                 self.player.current_exp -= self.game_settings.level_exp_requirements[self.player.level+1]
                 self.player.level += 1
-                self.player.strength += 4 + self.player.level
-                self.player.agility += 4 + self.player.level
-                self.player.intellect += 4 + self.player.level
-                self.player.stamina += 4 + self.player.level
+                self.player.strength += 4 + (self.player.level // 2)
+                self.player.agility += 4 + (self.player.level // 2)
+                self.player.intellect += 4 + (self.player.level // 2)
+                self.player.stamina += 4 + (self.player.level // 2)
                 
                 query = """UPDATE characters SET char_level = ?, char_strength = ?, char_agility = ?, char_intellect = ?, char_stamina = ?, curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
                 data = (self.player.level, self.player.strength, self.player.agility, self.player.intellect, self.player.stamina, self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
@@ -1940,7 +1940,7 @@ class Character(arcade.Sprite):
                 print("Player attack hit for {}".format(damage))
                 return damage
         elif self.player_class == "Mage":
-            damage = 4 + self.spell_power
+            damage = 5 + self.spell_power
             print("Caster crit chance: {}".format(self.spell_crit))
             if random.random() <= self.spell_crit:
                 damage *= 1.5
