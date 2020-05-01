@@ -72,7 +72,17 @@ class GameSettings():
                 self.level_exp_requirements[level] = level_req
             else:
                 self.level_exp_requirements[level] = level_req
-            level_req *= 1.75
+
+            if level <= 10:
+                level_req *= 1.4
+            elif 10 < level <= 15:
+                level_req *= 1.3
+            elif 15 < level <= 20:
+                level_req *= 1.2
+            elif 20 < level <= 25:
+                level_req *= 1.1
+            elif level > 25:
+                level_req *= 1.02
 
 def createAlert(text, title, button):
     pyautogui.alert(text=text, title=title, button=button)
@@ -1330,7 +1340,7 @@ class Onslaught(arcade.View):
         # Will need to check for character levelup after each round, whether win or lose
         if result == "Won":
             # Give player stats necessary AND update curr_round_num in DB to +1
-            exp_earned = (100 * self.enemies_killed) + (CURRENT_ROUND * 100) + (300 if self.bossSpawned else 0)
+            exp_earned = (100 * self.enemies_killed) + (CURRENT_ROUND * (CURRENT_ROUND + 100)) + (100*CURRENT_ROUND if self.bossSpawned else 0)
             self.player.current_exp += exp_earned
             CURRENT_ROUND += 1
 
