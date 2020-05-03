@@ -27,3 +27,12 @@ Options Menu after selecting a character
 
 Pre-Game Lobby before starting a round  
 ![](/images/pregame_lobby.PNG)  
+  
+Void Stalker class demo  
+![](/images/voidstalker_demo.gif)  
+
+Mage class demo  
+![](/images/mage_demo.gif)  
+
+Assassin class demo  
+![](/images/assassin_demo.gif)  
