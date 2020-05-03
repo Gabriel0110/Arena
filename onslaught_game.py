@@ -1115,6 +1115,14 @@ class Onslaught(arcade.View):
                 self.playerCanBeHit = False
                 arcade.schedule(self.setPlayerHit, 0.75)
 
+        boss_damage = 50 * (1.0 + (CURRENT_ROUND / 10))
+        if self.player.collides_with_list(self.boss_enemies_list):
+            if self.playerCanBeHit == True:
+                self.player.takeDamage(boss_damage)
+                print("Enemy dealth {} damage.".format(boss_damage))
+                self.playerCanBeHit = False
+                arcade.schedule(self.setPlayerHit, 0.75)
+
         # Did you die?
         if self.current_health <= 0:
             # YOU DIED - END THE ROUND
@@ -1274,7 +1282,10 @@ class Onslaught(arcade.View):
         if self.current_enemy_count < self.total_enemy_count:
             if self.current_enemy_count % 5 == 0:
                 # Spawn caster enemy
-                caster_enemy_health = 150 + CURRENT_ROUND*50
+                if self.player.level < 6:
+                    caster_enemy_health = 150 + CURRENT_ROUND*50
+                else:
+                    caster_enemy_health = 150 + CURRENT_ROUND*100
 
                 # First, create the new enemy sprite
                 caster_enemy = EnemySprite("images/caster_sprite.png", 0.8)
@@ -1295,7 +1306,7 @@ class Onslaught(arcade.View):
             if CURRENT_ROUND % 4 == 0 and self.bossSpawned == False:
                 self.bossSpawned = True
                 # Spawn a boss enemy
-                boss_enemy_health = 1000 + CURRENT_ROUND*100
+                boss_enemy_health = 2000 + CURRENT_ROUND*400
 
                 # First, create the new enemy sprite
                 boss_enemy = EnemySprite("images/boss_sprite.png", 1.3)
@@ -1314,7 +1325,10 @@ class Onslaught(arcade.View):
                 self.current_enemy_count += 1
             
             # Now spawn basic enemy like normal
-            basic_enemy_health = 150 + CURRENT_ROUND*70
+            if self.player.level < 6:
+                basic_enemy_health = 150 + CURRENT_ROUND*50
+            else:
+                basic_enemy_health = 150 + CURRENT_ROUND*100
 
             # First, create the new enemy sprite
             enemy = EnemySprite("images/enemy_sprite.png", 0.8)
@@ -1637,6 +1651,7 @@ class RoundSummaryView(arcade.View):
         arcade.set_background_color(arcade.color.GRAY)
 
     def on_draw(self):
+        global onslaught
         arcade.start_render()
 
         arcade.draw_text("Round Summary", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.7, arcade.color.WHITE, font_size=40, anchor_x="center")
@@ -1647,10 +1662,10 @@ class RoundSummaryView(arcade.View):
         if self.leveledUp:
             arcade.draw_text("LEVEL UP!", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.4, arcade.color.WHITE, font_size=40, anchor_x="center")
             arcade.draw_text("-------------", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.385, arcade.color.WHITE, font_size=40, anchor_x="center")
-            arcade.draw_text("Strength +4", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.35, arcade.color.WHITE, font_size=20, anchor_x="center")
-            arcade.draw_text("Agility +4", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.325, arcade.color.WHITE, font_size=20, anchor_x="center")
-            arcade.draw_text("Intellect +4", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.3, arcade.color.WHITE, font_size=20, anchor_x="center")
-            arcade.draw_text("Stamina +4", SCREEN_WIDTH/2, SCREEN_HEIGHT*0.275, arcade.color.WHITE, font_size=20, anchor_x="center")
+            arcade.draw_text("Strength +{}".format(4+int(onslaught.player.level)), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.35, arcade.color.WHITE, font_size=20, anchor_x="center")
+            arcade.draw_text("Agility +{}".format(4+int(onslaught.player.level)), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.325, arcade.color.WHITE, font_size=20, anchor_x="center")
+            arcade.draw_text("Intellect +{}".format(4+int(onslaught.player.level)), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.3, arcade.color.WHITE, font_size=20, anchor_x="center")
+            arcade.draw_text("Stamina +{}".format(4+int(onslaught.player.level)), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.275, arcade.color.WHITE, font_size=20, anchor_x="center")
 
         for button in self.button_list:
             button.draw()
@@ -2299,7 +2314,7 @@ class MageSpells:
         if random.random() <= onslaught.player.attack_crit:
             dmg *= 1.5
 
-        comet = SpellSprite("images/caster_bolt.png", 3.5)
+        comet = SpellSprite("images/caster_bolt.png", 4.0)
         comet.setup("Glacial Comet", dmg, 0.7)
         comet_speed = 30
 
