@@ -8,18 +8,22 @@ Like any horde/wave-style game, the rounds get harder as you progress.  Here, th
 There are currently only 4 spells slots, so only 4 spells can be used by the player at any time.  However, there will be many spells options per class, and the player will have the opportunity to swap out spells how they deem fit, allowing for more customization and strategy of choosing which spells might be best in certain situations -- this might be more helpful in PvP, but it's available for single-player progression mode as well.
 
 
-All assets and sprite images used currently are from KennyNL (https://www.kenney.nl/), free to use.
+All assets and sprite images used currently are from KennyNL (https://www.kenney.nl/), free to use.  
 
 
-Below you can find some screenshots and gifs showcasing some gameplay of the current different classes in the single-player horde mode.
+Below you can find some screenshots and gifs showcasing some gameplay of the current different classes in the single-player horde mode.  
 
+Main Screen  
+![](/images/main_screen.PNG)  
 
-![](/images/main_screen.PNG)
+Character Select  
+![](/images/character_select.PNG)  
 
-![](/images/character_select.PNG)
+Character Creation  
+![](/images/character_creation.PNG)  
 
-![](/images/character_creation.PNG)
+Options Menu after selecting a character  
+![](/images/options_menu.PNG)  
 
-![](/images/options_menu.PNG)
-
-![](/images/pregame_lobby.PNG)
+Pre-Game Lobby before starting a round  
+![](/images/pregame_lobby.PNG)  
