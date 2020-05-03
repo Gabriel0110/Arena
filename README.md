@@ -9,3 +9,17 @@ There are currently only 4 spells slots, so only 4 spells can be used by the pla
 
 
 All assets and sprite images used currently are from KennyNL (https://www.kenney.nl/), free to use.
+
+
+Below you can find some screenshots and gifs showcasing some gameplay of the current different classes in the single-player horde mode.
+
+
+![](images/main_screen.png)
+
+![](images/character_select.png)
+
+![](images/character_creation.png)
+
+![](images/options_menu.png)
+
+![](images/pregame_lobby.png)
