@@ -10,7 +10,6 @@ from sqlite3 import Error
 import os
 import pyautogui
 from datetime import datetime
-import Spells
 
 SCREEN_WIDTH = round(pyautogui.size()[0]*0.8)
 SCREEN_HEIGHT = round(pyautogui.size()[1]*0.8)
@@ -1317,7 +1316,7 @@ class Onslaught(arcade.View):
                 boss_enemy.left = random.choice([random.randint(-80, -5), random.randint(SCREEN_WIDTH+5, SCREEN_WIDTH+80)])
 
                 # INITIAL enemy velocity -- it changes once they see the player
-                boss_enemy.velocity = (0, -1.5)
+                boss_enemy.velocity = (0, -2.0)
 
                 # Add it to the enemies list and all_sprites list
                 self.boss_enemies_list.append(boss_enemy)
