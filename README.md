@@ -14,12 +14,12 @@ All assets and sprite images used currently are from KennyNL (https://www.kenney
 Below you can find some screenshots and gifs showcasing some gameplay of the current different classes in the single-player horde mode.
 
 
-![](images/main_screen.png)
+![](/images/main_screen.PNG)
 
-![](images/character_select.png)
+![](/images/character_select.PNG)
 
-![](images/character_creation.png)
+![](/images/character_creation.PNG)
 
-![](images/options_menu.png)
+![](/images/options_menu.PNG)
 
-![](images/pregame_lobby.png)
+![](/images/pregame_lobby.PNG)
