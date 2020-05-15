@@ -75,13 +75,13 @@ class GameSettings():
             if level <= 5:
                 level_req *= 1.5
             elif 5 < level <= 15:
-                level_req *= 1.2
-            elif 15 < level <= 20:
-                level_req *= 1.13
-            elif 20 < level <= 25:
                 level_req *= 1.1
+            elif 15 < level <= 20:
+                level_req *= 1.05
+            elif 20 < level <= 25:
+                level_req *= 1.05
             elif level > 25:
-                level_req *= 1.02
+                level_req *= 1.01
 
 def createAlert(text, title, button):
     pyautogui.alert(text=text, title=title, button=button)
@@ -1206,17 +1206,17 @@ class Onslaught(arcade.View):
 
         # Add spell & trinket cooldown timers if they are on cooldown
         if self.spell1_cooldown > 0:
-            arcade.draw_text("X", SCREEN_WIDTH*0.425, SCREEN_HEIGHT*0.06, arcade.color.BLACK, 48, bold=True, anchor_x="center")
-            arcade.draw_text(str(self.spell1_cooldown), SCREEN_WIDTH*0.425, SCREEN_HEIGHT*0.015, arcade.color.BLACK, 25, bold=True, anchor_x="center")
+            arcade.draw_text("X", SCREEN_WIDTH*0.400, SCREEN_HEIGHT*0.06, arcade.color.BLACK, 48, bold=True, anchor_x="center")
+            arcade.draw_text(str(self.spell1_cooldown), SCREEN_WIDTH*0.400, SCREEN_HEIGHT*0.015, arcade.color.BLACK, 25, bold=True, anchor_x="center")
         if self.spell2_cooldown > 0:
-            arcade.draw_text("X", SCREEN_WIDTH*0.475, SCREEN_HEIGHT*0.06, arcade.color.BLACK, 48, bold=True, anchor_x="center")
-            arcade.draw_text(str(self.spell2_cooldown), SCREEN_WIDTH*0.475, SCREEN_HEIGHT*0.015, arcade.color.BLACK, 25, bold=True, anchor_x="center")
+            arcade.draw_text("X", SCREEN_WIDTH*0.470, SCREEN_HEIGHT*0.06, arcade.color.BLACK, 48, bold=True, anchor_x="center")
+            arcade.draw_text(str(self.spell2_cooldown), SCREEN_WIDTH*0.470, SCREEN_HEIGHT*0.015, arcade.color.BLACK, 25, bold=True, anchor_x="center")
         if self.spell3_cooldown > 0:
-            arcade.draw_text("X", SCREEN_WIDTH*0.525, SCREEN_HEIGHT*0.06, arcade.color.BLACK, 48, bold=True, anchor_x="center")
-            arcade.draw_text(str(self.spell3_cooldown), SCREEN_WIDTH*0.525, SCREEN_HEIGHT*0.015, arcade.color.BLACK, 25, bold=True, anchor_x="center")
+            arcade.draw_text("X", SCREEN_WIDTH*0.540, SCREEN_HEIGHT*0.06, arcade.color.BLACK, 48, bold=True, anchor_x="center")
+            arcade.draw_text(str(self.spell3_cooldown), SCREEN_WIDTH*0.540, SCREEN_HEIGHT*0.015, arcade.color.BLACK, 25, bold=True, anchor_x="center")
         if self.spell4_cooldown > 0:
-            arcade.draw_text("X", SCREEN_WIDTH*0.575, SCREEN_HEIGHT*0.06, arcade.color.BLACK, 48, bold=True, anchor_x="center")
-            arcade.draw_text(str(self.spell4_cooldown), SCREEN_WIDTH*0.575, SCREEN_HEIGHT*0.015, arcade.color.BLACK, 25, bold=True, anchor_x="center")
+            arcade.draw_text("X", SCREEN_WIDTH*0.610, SCREEN_HEIGHT*0.06, arcade.color.BLACK, 48, bold=True, anchor_x="center")
+            arcade.draw_text(str(self.spell4_cooldown), SCREEN_WIDTH*0.610, SCREEN_HEIGHT*0.015, arcade.color.BLACK, 25, bold=True, anchor_x="center")
         #if self.trinket_cooldown > 0:
         #    arcade.draw_text(self.trinket_cooldown, SCREEN_WIDTH*0.675, SCREEN_HEIGHT*0.08, arcade.color.BLACK, 14, bold=True, anchor_x="center")
 
@@ -1360,23 +1360,25 @@ class Onslaught(arcade.View):
             leveledUp = False
 
             # Check if levelup
-            if self.player.current_exp >= self.game_settings.level_exp_requirements[self.player.level+1]:
-                # LEVELUP -- setup new stat point increases and update DB with new stats for character
-                leveledUp = True
-                self.player.current_exp -= self.game_settings.level_exp_requirements[self.player.level+1]
-                self.player.level += 1
-                self.player.strength += 4 + self.player.level
-                self.player.agility += 4 + self.player.level
-                self.player.intellect += 4 + self.player.level
-                self.player.stamina += 4 + self.player.level
-                
-                query = """UPDATE characters SET char_level = ?, char_strength = ?, char_agility = ?, char_intellect = ?, char_stamina = ?, curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
-                data = (self.player.level, self.player.strength, self.player.agility, self.player.intellect, self.player.stamina, self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
-                self.updateStats(query, data)
-            else:
-                query = """UPDATE characters SET curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
-                data = (self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
-                self.updateStats(query, data)
+            while True:
+                if self.player.current_exp >= self.game_settings.level_exp_requirements[self.player.level+1]:
+                    # LEVELUP -- setup new stat point increases and update DB with new stats for character
+                    leveledUp = True
+                    self.player.current_exp -= self.game_settings.level_exp_requirements[self.player.level+1]
+                    self.player.level += 1
+                    self.player.strength += 4 + self.player.level
+                    self.player.agility += 4 + self.player.level
+                    self.player.intellect += 4 + self.player.level
+                    self.player.stamina += 4 + self.player.level
+                    
+                    query = """UPDATE characters SET char_level = ?, char_strength = ?, char_agility = ?, char_intellect = ?, char_stamina = ?, curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
+                    data = (self.player.level, self.player.strength, self.player.agility, self.player.intellect, self.player.stamina, self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
+                    self.updateStats(query, data)
+                else:
+                    query = """UPDATE characters SET curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
+                    data = (self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
+                    self.updateStats(query, data)
+                    break
 
             # Change view to summary view that has continue button that brings the player back to pregame lobby
             game.show_view(RoundSummaryView("WIN", self.enemies_killed, leveledUp, exp_earned))
@@ -1388,23 +1390,25 @@ class Onslaught(arcade.View):
             leveledUp = False
 
             # Check if levelup
-            if self.player.current_exp >= self.game_settings.level_exp_requirements[self.player.level+1]:
-                # LEVELUP -- setup new stat point increases and update DB with new stats for character
-                leveledUp = True
-                self.player.current_exp -= self.game_settings.level_exp_requirements[self.player.level+1]
-                self.player.level += 1
-                self.player.strength += 4 + self.player.level
-                self.player.agility += 4 + self.player.level
-                self.player.intellect += 4 + self.player.level
-                self.player.stamina += 4 + self.player.level
-                
-                query = """UPDATE characters SET char_level = ?, char_strength = ?, char_agility = ?, char_intellect = ?, char_stamina = ?, curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
-                data = (self.player.level, self.player.strength, self.player.agility, self.player.intellect, self.player.stamina, self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
-                self.updateStats(query, data)
-            else:
-                query = """UPDATE characters SET curr_exp = ? WHERE char_name = ?"""
-                data = (self.player.current_exp, CURRENT_CHAR)
-                self.updateStats(query, data)
+            while True:
+                if self.player.current_exp >= self.game_settings.level_exp_requirements[self.player.level+1]:
+                    # LEVELUP -- setup new stat point increases and update DB with new stats for character
+                    leveledUp = True
+                    self.player.current_exp -= self.game_settings.level_exp_requirements[self.player.level+1]
+                    self.player.level += 1
+                    self.player.strength += 4 + self.player.level
+                    self.player.agility += 4 + self.player.level
+                    self.player.intellect += 4 + self.player.level
+                    self.player.stamina += 4 + self.player.level
+                    
+                    query = """UPDATE characters SET char_level = ?, char_strength = ?, char_agility = ?, char_intellect = ?, char_stamina = ?, curr_exp = ?, curr_round_num = ? WHERE char_name = ?"""
+                    data = (self.player.level, self.player.strength, self.player.agility, self.player.intellect, self.player.stamina, self.player.current_exp, CURRENT_ROUND, CURRENT_CHAR)
+                    self.updateStats(query, data)
+                else:
+                    query = """UPDATE characters SET curr_exp = ? WHERE char_name = ?"""
+                    data = (self.player.current_exp, CURRENT_CHAR)
+                    self.updateStats(query, data)
+                    break
 
             # Change view to summary view that has continue button that brings the player back to pregame lobby
             game.show_view(RoundSummaryView("LOSS", self.enemies_killed, leveledUp, exp_earned))
@@ -1957,7 +1961,7 @@ class Character(arcade.Sprite):
         if self.player_class == "Assassin" or self.player_class == "Warrior" or self.player_class == "Void Stalker":
             damage = 3 + self.attack_power + (0 if onslaught.voidTipActive == False else (self.attack_power*1.5 + self.spell_power*0.5))
             if random.random() <= self.attack_crit:
-                damage *= 1.5
+                damage *= 1.65
                 print("Player critical strike hit for {}!".format(damage))
                 return damage
             else:
@@ -1967,7 +1971,7 @@ class Character(arcade.Sprite):
             damage = 5 + self.spell_power
             print("Caster crit chance: {}".format(self.spell_crit))
             if random.random() <= self.spell_crit:
-                damage *= 1.5
+                damage *= 1.65
                 print("Player critical strike hit for {}!".format(damage))
                 return damage
             else:
@@ -2059,7 +2063,7 @@ class AssassinSpells:
 
             # Crit?
             if random.random() <= onslaught.player.attack_crit:
-                dmg *= 1.5
+                dmg *= 1.65
             shuriken = SpellSprite("images/shuriken.png", 0.1)
             shuriken.setup("Shuriken Blitz", dmg, 0.3)
             shuriken_speed = 40
@@ -2113,7 +2117,7 @@ class AssassinSpells:
         for i in range(3):
             # Crit?
             if random.random() <= onslaught.player.attack_crit:
-                dmg *= 1.5
+                dmg *= 1.65
             shuriken = SpellSprite("images/shuriken.png", 0.1)
             shuriken.setup("Poison Shuriken", dmg, 0.5)
             shuriken_speed = 40
@@ -2148,7 +2152,7 @@ class AssassinSpells:
 
         # Crit?
         if random.random() <= onslaught.player.attack_crit:
-            dmg *= 1.5
+            dmg *= 1.65
             crit = True
 
         x = mouse_x
@@ -2233,7 +2237,7 @@ class MageSpells:
         for i in range(9):
             # Crit?
             if random.random() <= onslaught.player.spell_crit:
-                dmg *= 1.5
+                dmg *= 1.65
             fireball = SpellSprite("images/fireball.png", 0.5)
             fireball.setup("Eruption", dmg, 0)
             fireball_speed = 20
@@ -2275,7 +2279,7 @@ class MageSpells:
 
         # Crit?
         if random.random() <= onslaught.player.spell_crit:
-            dmg *= 1.5
+            dmg *= 1.65
         
         degrees = [30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270]
 
@@ -2311,7 +2315,7 @@ class MageSpells:
 
         # Crit?
         if random.random() <= onslaught.player.attack_crit:
-            dmg *= 1.5
+            dmg *= 1.65
 
         comet = SpellSprite("images/caster_bolt.png", 4.0)
         comet.setup("Glacial Comet", dmg, 0.7)
@@ -2363,7 +2367,7 @@ class VoidStalkerSpells:
 
         # Crit?
         if random.random() <= onslaught.player.attack_crit:
-            dmg *= 1.5
+            dmg *= 1.65
 
         grip = SpellSprite("images/shadow_ball.png", 0.2)
         grip.setup("Shadow Grip", dmg, 1.0, 1.0) # 100% slow for 1 second
@@ -2402,7 +2406,7 @@ class VoidStalkerSpells:
         for i in range(9):
             # Crit?
             if random.random() <= onslaught.player.spell_crit:
-                dmg *= 1.5
+                dmg *= 1.65
             fireball = SpellSprite("images/shadow_ball.png", 0.5)
             fireball.setup("Void Nova", dmg, 0)
             fireball_speed = 20
