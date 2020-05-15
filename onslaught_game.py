@@ -1058,7 +1058,7 @@ class Onslaught(arcade.View):
         self.current_mana = self.player.getCurrentMana()
 
         # Draw spell bar UI sprites, then add spell images inside them
-        centers = [SCREEN_WIDTH*0.425, SCREEN_WIDTH*0.475, SCREEN_WIDTH*0.525, SCREEN_WIDTH*0.575, SCREEN_WIDTH*0.675]
+        centers = [SCREEN_WIDTH*0.400, SCREEN_WIDTH*0.470, SCREEN_WIDTH*0.540, SCREEN_WIDTH*0.610, SCREEN_WIDTH*0.700]
         for i in range(5):
             if i == 4:
                 spell_slot = arcade.Sprite("images/spell_slot.png", 1.0)
@@ -1166,7 +1166,7 @@ class Onslaught(arcade.View):
         # Begin rendering (will end automatically after method ends)
         arcade.start_render()
 
-        arcade.draw_text("Trinket", SCREEN_WIDTH*0.6625, SCREEN_HEIGHT*0.025, arcade.color.BLACK, 16, bold=True)
+        arcade.draw_text("Trinket", SCREEN_WIDTH*0.7, SCREEN_HEIGHT*0.025, arcade.color.BLACK, 16, bold=True, anchor_x="center")
 
         # Draw player name
         arcade.draw_text(CURRENT_CHAR, self.player.center_x, self.player.top+17.5, arcade.color.WHITE, 16, bold=True, anchor_x="center")
@@ -1198,7 +1198,7 @@ class Onslaught(arcade.View):
             arcade.draw_rectangle_filled(enemy.center_x - ((69.7 - (69.7*hp_percent))/2), enemy.top+10, 69.7*hp_percent, 9.7, arcade.color.RED)
 
         # Add spell names to UI slots
-        centers = [SCREEN_WIDTH*0.425, SCREEN_WIDTH*0.475, SCREEN_WIDTH*0.525, SCREEN_WIDTH*0.575, SCREEN_WIDTH*0.675]
+        centers = [SCREEN_WIDTH*0.400, SCREEN_WIDTH*0.470, SCREEN_WIDTH*0.540, SCREEN_WIDTH*0.610, SCREEN_WIDTH*0.700]
         num_spells = len(self.player.spells)
         if num_spells > 0:
             for i in range(num_spells):
