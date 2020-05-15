@@ -1106,7 +1106,7 @@ class Onslaught(arcade.View):
                 self.sword.center_y = self.player.center_y - 30
 
         # Did an enemy touch you? --- player can only be hit every 0.75 seconds after being hit before
-        enemy_damage = 20 * (1.0 + (CURRENT_ROUND / 10))
+        enemy_damage = 35 * (1.0 + (CURRENT_ROUND / 10))
         if self.player.collides_with_list(self.basic_enemies_list):
             if self.playerCanBeHit == True:
                 self.player.takeDamage(enemy_damage)
@@ -1114,7 +1114,7 @@ class Onslaught(arcade.View):
                 self.playerCanBeHit = False
                 arcade.schedule(self.setPlayerHit, 0.75)
 
-        boss_damage = 50 * (1.0 + (CURRENT_ROUND / 10))
+        boss_damage = 175 * (1.0 + (CURRENT_ROUND / 10))
         if self.player.collides_with_list(self.boss_enemies_list):
             if self.playerCanBeHit == True:
                 self.player.takeDamage(boss_damage)
@@ -1305,7 +1305,7 @@ class Onslaught(arcade.View):
             if CURRENT_ROUND % 4 == 0 and self.bossSpawned == False:
                 self.bossSpawned = True
                 # Spawn a boss enemy
-                boss_enemy_health = 2000 + CURRENT_ROUND*400
+                boss_enemy_health = 4000 + CURRENT_ROUND*500
 
                 # First, create the new enemy sprite
                 boss_enemy = EnemySprite("images/boss_sprite.png", 1.3)
@@ -1780,7 +1780,7 @@ class CasterEnemyAttack(arcade.Sprite):
         if self.collides_with_sprite(onslaught.player):
                 self.remove_from_sprite_lists()
                 if onslaught.playerCanBeHit == True:
-                    enemy_damage = 20 * (1.0 + (CURRENT_ROUND / 10))
+                    enemy_damage = 75 * (1.0 + (CURRENT_ROUND / 10))
                     onslaught.player.takeDamage(enemy_damage)
 
 class WeaponSprite(arcade.Sprite):
