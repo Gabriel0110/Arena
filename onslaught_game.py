@@ -792,7 +792,7 @@ class OnslaughtPreGameLobby(arcade.View):
         self.all_sprites = arcade.SpriteList()
 
         self.theme = getButtonThemes()
-        self.button_list.append(LeaveLobbyButton(self, SCREEN_WIDTH*0.95, SCREEN_HEIGHT*0.97, 200, 50, theme=self.theme))
+        self.button_list.append(LeaveLobbyButton(self, SCREEN_WIDTH*0.9, SCREEN_HEIGHT*0.97, 200, 50, theme=self.theme))
 
         self.player_velocity = 8
         self.curr_round_number = self.getCurrentRoundNumber()
@@ -823,7 +823,7 @@ class OnslaughtPreGameLobby(arcade.View):
         self.current_mana = self.player.getCurrentMana()
 
         # Draw spell bar UI sprites, then add spell images inside them
-        centers = [SCREEN_WIDTH*0.425, SCREEN_WIDTH*0.475, SCREEN_WIDTH*0.525, SCREEN_WIDTH*0.575, SCREEN_WIDTH*0.675]
+        centers = [SCREEN_WIDTH*0.400, SCREEN_WIDTH*0.470, SCREEN_WIDTH*0.540, SCREEN_WIDTH*0.610, SCREEN_WIDTH*0.700]
         for i in range(5):
             if i == 4:
                 spell_slot = arcade.Sprite("images/spell_slot.png", 1.0)
@@ -900,10 +900,10 @@ class OnslaughtPreGameLobby(arcade.View):
         # Begin rendering (will end automatically after method ends)
         arcade.start_render()
 
-        arcade.draw_text("Trinket", SCREEN_WIDTH*0.6625, SCREEN_HEIGHT*0.025, arcade.color.BLACK, 16, bold=True)
+        arcade.draw_text("Trinket", SCREEN_WIDTH*0.7, SCREEN_HEIGHT*0.025, arcade.color.BLACK, 16, bold=True, anchor_x="center")
         arcade.draw_text("Begin Round", self.entrance.left - 30, SCREEN_HEIGHT/2 - 50, arcade.color.BLACK, 16, bold=True, rotation=270.0, anchor_x="center")
         if self.player.level != 50:
-            arcade.draw_text("Character Level: {}\nExperience: {}/{}".format(self.player.level, int(self.player.current_exp), int(self.game_settings.level_exp_requirements[self.player.level+1])), SCREEN_WIDTH*0.07, SCREEN_HEIGHT*0.95, arcade.color.WHITE, 24, bold=True, anchor_x="center")
+            arcade.draw_text("Character Level: {}\nExperience: {}/{}".format(self.player.level, int(self.player.current_exp), int(self.game_settings.level_exp_requirements[self.player.level+1])), SCREEN_WIDTH*0.105, SCREEN_HEIGHT*0.925, arcade.color.WHITE, 22, bold=True, anchor_x="center")
 
         # Draw player name
         arcade.draw_text(CURRENT_CHAR, self.player.center_x, self.player.top+17.5, arcade.color.WHITE, 16, bold=True, anchor_x="center")
@@ -919,10 +919,10 @@ class OnslaughtPreGameLobby(arcade.View):
         arcade.draw_rectangle_filled(self.player.center_x - ((69.7 - (69.7*self.mana_percent))/2), self.player.top+2, 69.7*self.mana_percent, 9.7, arcade.color.BLUE)
 
         # Display current round
-        arcade.draw_text("Current Round: {}".format(self.curr_round_number), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.96, arcade.color.WHITE, 30, bold=True, anchor_x="center")
+        arcade.draw_text("Current Round: {}".format(self.curr_round_number), SCREEN_WIDTH/2, SCREEN_HEIGHT*0.95, arcade.color.WHITE, 30, bold=True, anchor_x="center")
 
         # Add spell names to UI slots
-        centers = [SCREEN_WIDTH*0.425, SCREEN_WIDTH*0.475, SCREEN_WIDTH*0.525, SCREEN_WIDTH*0.575, SCREEN_WIDTH*0.675]
+        centers = [SCREEN_WIDTH*0.400, SCREEN_WIDTH*0.470, SCREEN_WIDTH*0.540, SCREEN_WIDTH*0.610, SCREEN_WIDTH*0.700]
         num_spells = len(self.player.spells)
         if num_spells > 0:
             for i in range(num_spells):
