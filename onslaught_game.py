@@ -1114,7 +1114,7 @@ class Onslaught(arcade.View):
                 self.playerCanBeHit = False
                 arcade.schedule(self.setPlayerHit, 0.75)
 
-        boss_damage = 175 * (1.0 + (CURRENT_ROUND / 10))
+        boss_damage = 200 * (1.0 + (CURRENT_ROUND / 10))
         if self.player.collides_with_list(self.boss_enemies_list):
             if self.playerCanBeHit == True:
                 self.player.takeDamage(boss_damage)
@@ -1305,7 +1305,7 @@ class Onslaught(arcade.View):
             if CURRENT_ROUND % 4 == 0 and self.bossSpawned == False:
                 self.bossSpawned = True
                 # Spawn a boss enemy
-                boss_enemy_health = 4000 + CURRENT_ROUND*500
+                boss_enemy_health = 4000 + CURRENT_ROUND*700
 
                 # First, create the new enemy sprite
                 boss_enemy = EnemySprite("images/boss_sprite.png", 1.3)
