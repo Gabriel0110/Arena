@@ -1321,7 +1321,7 @@ class Onslaught(arcade.View):
                 # Add it to the enemies list and all_sprites list
                 self.boss_enemies_list.append(boss_enemy)
                 self.all_sprites.append(boss_enemy)
-                self.current_enemy_count += 1
+                self.current_enemy_count += 4
             
             # Now spawn basic enemy like normal
             if self.player.level < 6:
