@@ -1038,7 +1038,7 @@ class Onslaught(arcade.View):
         arcade.schedule(self.casterShoot, 2.5)
 
         # Mana regeneration scheduler
-        arcade.schedule(self.regenMana, 2.5)
+        arcade.schedule(self.regenMana, 2.0)
 
     def setup(self):
         # Set the background color
@@ -1071,8 +1071,6 @@ class Onslaught(arcade.View):
             self.spell_slot_list.append(spell_slot)
             self.all_sprites.append(spell_slot)
 
-        # Spawn a new enemy every 0.5 seconds
-        #arcade.schedule(self.add_enemy, 0.5)
 
     def on_show(self):
         # Set the background color
@@ -1278,7 +1276,7 @@ class Onslaught(arcade.View):
         if gamePaused:
             return
 
-        if self.current_enemy_count < self.total_enemy_count:
+        if self.current_enemy_count <= self.total_enemy_count:
             if self.current_enemy_count % 5 == 0:
                 # Spawn caster enemy
                 if self.player.level < 6:
@@ -1321,7 +1319,7 @@ class Onslaught(arcade.View):
                 # Add it to the enemies list and all_sprites list
                 self.boss_enemies_list.append(boss_enemy)
                 self.all_sprites.append(boss_enemy)
-                self.current_enemy_count += 4
+                self.current_enemy_count += 1
             
             # Now spawn basic enemy like normal
             if self.player.level < 6:
@@ -1444,28 +1442,25 @@ class Onslaught(arcade.View):
             if len(self.player.spells) >= 1:
                 if self.spell1_cooldown == 0:
                     spell = self.player.spells[0]
-                    if self.current_mana >= self.max_mana*0.05:
-                        self.player.loseMana(self.max_mana*0.05)
+                    if self.current_mana >= self.max_mana*0.125:
                         self.player.castSpell(spell)
         elif key == arcade.key.R or key == arcade.key.KEY_2:
             if len(self.player.spells) >= 2:
                 if self.spell2_cooldown == 0:
                     spell = self.player.spells[1]
-                    if self.current_mana >= self.max_mana*0.1:
+                    if self.current_mana >= self.max_mana*0.125:
                         self.player.castSpell(spell)
         elif key == arcade.key.F or key == arcade.key.KEY_3:
             if len(self.player.spells) >= 3:
                 if self.spell3_cooldown == 0:
                     spell = self.player.spells[2]
-                    if self.current_mana >= self.max_mana*0.1:
-                        self.player.loseMana(self.max_mana*0.1)
+                    if self.current_mana >= self.max_mana*0.125:
                         self.player.castSpell(spell)
         elif key == arcade.key.C or key == arcade.key.KEY_4:
             if len(self.player.spells) >= 4:
                 if self.spell4_cooldown == 0:
                     spell = self.player.spells[3]
                     if self.current_mana >= self.max_mana*0.25:
-                        self.player.loseMana(self.max_mana*0.25)
                         self.player.castSpell(spell)
 
     def on_key_release(self, key: int, modifiers: int):
@@ -2086,6 +2081,7 @@ class AssassinSpells:
 
             onslaught.spell_sprite_list.append(shuriken)
             onslaught.all_sprites.append(shuriken)
+            onslaught.player.loseMana(onslaught.max_mana*0.125)
         else:
             arcade.unschedule(AssassinSpells.startShurikenBlitz)
             AssassinSpells.blitz_timer = 0
@@ -2140,6 +2136,7 @@ class AssassinSpells:
 
             onslaught.spell_sprite_list.append(shuriken)
             onslaught.all_sprites.append(shuriken)
+        onslaught.player.loseMana(onslaught.max_mana*0.125)
         onslaught.spell1_cooldown = 6
         arcade.schedule(onslaught.spell1Countdown, 1.0)
 
@@ -2165,7 +2162,7 @@ class AssassinSpells:
                 # TELEPORT PLAYER AND DEAL DAMAGE, AND STOP CHECKING ENEMIES
                 onslaught.playerCanBeHit = False
                 arcade.schedule(AssassinSpells.endInvulnerability, 1.0)
-                onslaught.player.loseMana(onslaught.max_mana*0.1)
+                onslaught.player.loseMana(onslaught.max_mana*0.125)
                 onslaught.player.center_x = enemy.center_x
                 onslaught.player.center_y = enemy.center_y
                 enemy.takeDamage(dmg)
@@ -2181,7 +2178,7 @@ class AssassinSpells:
                 # TELEPORT PLAYER AND DEAL DAMAGE, AND STOP CHECKING ENEMIES
                 onslaught.playerCanBeHit = False
                 arcade.schedule(AssassinSpells.endInvulnerability, 1.0)
-                onslaught.player.loseMana(onslaught.max_mana*0.1)
+                onslaught.player.loseMana(onslaught.max_mana*0.125)
                 onslaught.player.center_x = enemy.center_x
                 onslaught.player.center_y = enemy.center_y
                 enemy.takeDamage(dmg)
@@ -2197,7 +2194,7 @@ class AssassinSpells:
                 # TELEPORT PLAYER AND DEAL DAMAGE, AND STOP CHECKING ENEMIES
                 onslaught.playerCanBeHit = False
                 arcade.schedule(AssassinSpells.endInvulnerability, 1.0)
-                onslaught.player.loseMana(onslaught.max_mana*0.1)
+                onslaught.player.loseMana(onslaught.max_mana*0.125)
                 onslaught.player.center_x = enemy.center_x
                 onslaught.player.center_y = enemy.center_y
                 enemy.takeDamage(dmg)
@@ -2211,6 +2208,7 @@ class AssassinSpells:
         """ Vanish into the darkness and become hidden from your enemies for 3 seconds. """
         onslaught.player.isVisible = False
         arcade.set_background_color(arcade.color.BLACK)
+        onslaught.player.loseMana(onslaught.max_mana*0.125)
         onslaught.spell3_cooldown = 20
         arcade.schedule(onslaught.spell3Countdown, 1.0)
         arcade.schedule(AssassinSpells.endInvisibility, 3.0)
@@ -2218,6 +2216,7 @@ class AssassinSpells:
     def shurikenBlitz():
         """ Launch a barrage of shuriken at the location of your mouse for 4 seconds. Each shuriken deals 10 damage + 50% of attack power and slows the enemy by 30%. """
         arcade.schedule(AssassinSpells.startShurikenBlitz, 0.1)
+        onslaught.player.loseMana(onslaught.max_mana*0.25)
         onslaught.spell4_cooldown = 45
         arcade.schedule(onslaught.spell4Countdown, 1.0)
 
@@ -2253,6 +2252,7 @@ class MageSpells:
 
             onslaught.spell_sprite_list.append(fireball)
             onslaught.all_sprites.append(fireball)
+        onslaught.player.loseMana(onslaught.max_mana*0.125)
         onslaught.spell1_cooldown = 6
         arcade.schedule(onslaught.spell1Countdown, 1.0)
 
@@ -2264,6 +2264,7 @@ class MageSpells:
 
         onslaught.player.center_x = x
         onslaught.player.center_y = y
+        onslaught.player.loseMana(onslaught.max_mana*0.125)
         onslaught.spell2_cooldown = 12
         arcade.schedule(onslaught.spell2Countdown, 1.0)
 
@@ -2299,6 +2300,7 @@ class MageSpells:
 
             onslaught.spell_sprite_list.append(frost)
             onslaught.all_sprites.append(frost)
+        onslaught.player.loseMana(onslaught.max_mana*0.125)
         onslaught.spell3_cooldown = 20
         arcade.schedule(onslaught.spell3Countdown, 1.0)
 
@@ -2306,7 +2308,7 @@ class MageSpells:
         global onslaught
         import math
         """ Send a glacial comet soaring toward the direction of your mouse that deals 300 + 200% of spell power to any enemy hit, slowing them by 70% for 3 seconds. """
-        dmg = 300 + (onslaught.player.spell_power * 2.0)
+        dmg = 500 + (onslaught.player.spell_power * 3.0)
 
         #pos = pag.position() #queryMousePosition()
         #print(pos)
@@ -2314,7 +2316,7 @@ class MageSpells:
         y = mouse_y
 
         # Crit?
-        if random.random() <= onslaught.player.attack_crit:
+        if random.random() <= onslaught.player.spell_crit:
             dmg *= 1.65
 
         comet = SpellSprite("images/caster_bolt.png", 4.0)
@@ -2339,6 +2341,7 @@ class MageSpells:
 
         onslaught.spell_sprite_list.append(comet)
         onslaught.all_sprites.append(comet)
+        onslaught.player.loseMana(onslaught.max_mana*0.25)
         onslaught.spell4_cooldown = 45
         arcade.schedule(onslaught.spell4Countdown, 1.0)
 
@@ -2350,6 +2353,7 @@ class VoidStalkerSpells:
         global onslaught
         """ Your next basic attack deals 150% of attack power and 50% of spell power.  If the target is a player, the player will have 10% of their mana drained. """
         onslaught.voidTipActive = True
+        onslaught.player.loseMana(onslaught.max_mana*0.125)
         onslaught.spell1_cooldown = 6
         arcade.schedule(onslaught.spell1Countdown, 1.0)
 
@@ -2391,6 +2395,7 @@ class VoidStalkerSpells:
 
         onslaught.spell_sprite_list.append(grip)
         onslaught.all_sprites.append(grip)
+        onslaught.player.loseMana(onslaught.max_mana*0.125)
         onslaught.spell2_cooldown = 12
         arcade.schedule(onslaught.spell2Countdown, 1.0)
 
@@ -2422,6 +2427,7 @@ class VoidStalkerSpells:
 
             onslaught.spell_sprite_list.append(fireball)
             onslaught.all_sprites.append(fireball)
+        onslaught.player.loseMana(onslaught.max_mana*0.125)
         onslaught.spell3_cooldown = 20
         arcade.schedule(onslaught.spell3Countdown, 1.0)
 
@@ -2435,6 +2441,7 @@ class VoidStalkerSpells:
         onslaught.player.attack_power += VoidStalkerSpells.bonus_ap
         VoidStalkerSpells.movespeed_reduction = onslaught.player_velocity * 0.3
         onslaught.player_velocity -= VoidStalkerSpells.movespeed_reduction 
+        onslaught.player.loseMana(onslaught.max_mana*0.25)
         onslaught.spell4_cooldown = 45
         arcade.schedule(onslaught.spell4Countdown, 1.0)
         arcade.schedule(VoidStalkerSpells.endEnterTheVoid, 8.0)
