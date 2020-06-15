@@ -306,14 +306,14 @@ class NameButton(TextButton):
 #-------------------------------------------  CHARACTER SELECT/DELETE BUTTONS   ---------------------------------------------#
 
 class CharacterButton(TextButton):
-    def __init__(self, view, x=0, y=0, width=150, height=100, text="", theme=None, char_name="", char_level=1, char_class=""):
+    def __init__(self, view, x=0, y=0, width=350, height=175, text="", theme=None, char_name="", char_level=1, char_class="", char_round=1):
         super().__init__(x, y, width, height, text, theme=theme)
         self.x = x
         self.y = y
         self.width = width
         self.height = height
         self.char_name = char_name
-        self.text = "Character: {}\nClass: {}\nLevel: {}".format(char_name, char_class, char_level)
+        self.text = "Character: {}\nClass: {}\nLevel: {}\nRound: {}".format(char_name, char_class, char_level, char_round)
 
     def on_press(self):
         global characterSelected, CURRENT_CHAR, char_selected_bttn_loc
@@ -385,7 +385,7 @@ class CharacterSelect(arcade.View):
         if len(loaded_characters) > 0:
             slot = 1
             for char_id, char_info in loaded_characters.items():
-                self.button_list.append(CharacterButton(self, character_slot_locations[slot-1][0], character_slot_locations[slot-1][1], 350, 150, theme=self.theme, char_name=char_info[1], char_level=char_info[4], char_class=char_info[3]))
+                self.button_list.append(CharacterButton(self, character_slot_locations[slot-1][0], character_slot_locations[slot-1][1], 350, 175, theme=self.theme, char_name=char_info[1], char_level=char_info[4], char_class=char_info[3], char_round=char_info[-1]))
                 self.button_list.append(DeleteButton(self, character_slot_locations[slot-1][0]+185, character_slot_locations[slot-1][1]+5, 50, 50, theme=self.theme, text="X", char_name=char_info[1]))
                 slot += 1
     
