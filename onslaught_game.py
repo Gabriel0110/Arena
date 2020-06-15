@@ -187,8 +187,9 @@ class ReturnToLobbyButton(TextButton):
         self.text = "Quit Round"
 
     def on_press(self):
-        global game
+        global game, gamePaused
         # Leave current round and go back to pre-game lobby
+        gamePaused = False
         char_select = CharacterSelect()
         options_view = AfterCharacterSelect(char_select)
         pregame_lobby_view = OnslaughtPreGameLobby(options_view)
