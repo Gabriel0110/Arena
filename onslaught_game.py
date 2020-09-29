@@ -788,6 +788,11 @@ class OnslaughtPreGameLobby(arcade.View):
 
         self.game_settings = GameSettings()
 
+        self.left_key_down = False
+        self.right_key_down = False
+        self.up_key_down = False
+        self.down_key_down = False
+
         # Set up the empty sprite lists
         self.spell_slot_list = arcade.SpriteList()
         self.all_sprites = arcade.SpriteList()
@@ -944,29 +949,42 @@ class OnslaughtPreGameLobby(arcade.View):
 
         if key == arcade.key.A or key == arcade.key.LEFT:
             self.player.change_x = -self.player_velocity
+            self.left_key_down = True
         elif key == arcade.key.D or key == arcade.key.RIGHT:
             self.player.change_x = self.player_velocity
+            self.right_key_down = True
         elif key == arcade.key.W or key == arcade.key.UP:
             self.player.change_y = self.player_velocity
+            self.up_key_down = True
         elif key == arcade.key.S or key == arcade.key.DOWN:
             self.player.change_y = -self.player_velocity
+            self.down_key_down = True
 
     def on_key_release(self, key: int, modifiers: int):
-        if (
-            key == arcade.key.W
-            or key == arcade.key.S
-            or key == arcade.key.UP
-            or key == arcade.key.DOWN
-        ):
-            self.player.change_y = 0
-
-        if (
-            key == arcade.key.A
-            or key == arcade.key.D
-            or key == arcade.key.LEFT
-            or key == arcade.key.RIGHT
-        ):
-            self.player.change_x = 0
+        if key == arcade.key.A or key == arcade.key.LEFT:
+            self.left_key_down = False
+            if self.right_key_down:
+                return
+            else:
+                self.player.change_x = 0
+        elif key == arcade.key.D or key == arcade.key.RIGHT:
+            self.right_key_down = False
+            if self.left_key_down:
+                return
+            else:
+                self.player.change_x = 0
+        elif key == arcade.key.W or key == arcade.key.UP:
+            self.up_key_down = False
+            if self.down_key_down:
+                return
+            else:
+                self.player.change_y = 0
+        elif key == arcade.key.S or key == arcade.key.DOWN:
+            self.down_key_down = False
+            if self.up_key_down:
+                return
+            else:
+                self.player.change_y = 0
 
     def getCurrentRoundNumber(self):
         global CURRENT_CHAR
@@ -985,6 +1003,11 @@ class Onslaught(arcade.View):
         global player, CURRENT_ROUND
 
         self.game_settings = GameSettings()
+
+        self.left_key_down = False
+        self.right_key_down = False
+        self.up_key_down = False
+        self.down_key_down = False
 
         # Set up the empty sprite lists
         self.basic_enemies_list = arcade.SpriteList()
@@ -1432,12 +1455,16 @@ class Onslaught(arcade.View):
 
         if key == arcade.key.A or key == arcade.key.LEFT:
             self.player.change_x = -self.player_velocity
+            self.left_key_down = True
         elif key == arcade.key.D or key == arcade.key.RIGHT:
             self.player.change_x = self.player_velocity
+            self.right_key_down = True
         elif key == arcade.key.W or key == arcade.key.UP:
             self.player.change_y = self.player_velocity
+            self.up_key_down = True
         elif key == arcade.key.S or key == arcade.key.DOWN:
             self.player.change_y = -self.player_velocity
+            self.down_key_down = True
         elif key == arcade.key.E or key == arcade.key.KEY_1:
             # CHECK IF PLAYER HAS THE REQUIRED MANA FOR SPELL BEFORE CASTING AND SUBTRACTING MANA
             if len(self.player.spells) >= 1:
@@ -1465,21 +1492,30 @@ class Onslaught(arcade.View):
                         self.player.castSpell(spell)
 
     def on_key_release(self, key: int, modifiers: int):
-        if (
-            key == arcade.key.W
-            or key == arcade.key.S
-            or key == arcade.key.UP
-            or key == arcade.key.DOWN
-        ):
-            self.player.change_y = 0
-
-        if (
-            key == arcade.key.A
-            or key == arcade.key.D
-            or key == arcade.key.LEFT
-            or key == arcade.key.RIGHT
-        ):
-            self.player.change_x = 0
+        if key == arcade.key.A or key == arcade.key.LEFT:
+            self.left_key_down = False
+            if self.right_key_down:
+                return
+            else:
+                self.player.change_x = 0
+        elif key == arcade.key.D or key == arcade.key.RIGHT:
+            self.right_key_down = False
+            if self.left_key_down:
+                return
+            else:
+                self.player.change_x = 0
+        elif key == arcade.key.W or key == arcade.key.UP:
+            self.up_key_down = False
+            if self.down_key_down:
+                return
+            else:
+                self.player.change_y = 0
+        elif key == arcade.key.S or key == arcade.key.DOWN:
+            self.down_key_down = False
+            if self.up_key_down:
+                return
+            else:
+                self.player.change_y = 0
 
     def on_mouse_press(self, x, y, button, modifiers):
         import math
